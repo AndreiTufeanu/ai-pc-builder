@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/chat")
-@CrossOrigin(origins = "*") // Allow frontend to connect
+@CrossOrigin(origins = "*")
 public class ChatController {
 
     private final PCBuilderService pcBuilderService;
@@ -18,7 +18,7 @@ public class ChatController {
 
     @PostMapping
     public ChatResponse chat(@RequestBody ChatRequest request) {
-        String response = pcBuilderService.getChatResponse(request.message());
+        String response = pcBuilderService.getChatResponse(request.getMessage());
         return new ChatResponse(response);
     }
 }

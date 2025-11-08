@@ -1,0 +1,25 @@
+.auth-container {
+    padding: 50px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.auth-container h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+}
+
+.auth-links {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.auth-links a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}

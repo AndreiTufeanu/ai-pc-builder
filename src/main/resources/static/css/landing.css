@@ -1,0 +1,54 @@
+.landing-content {
+    padding: 50px;
+    text-align: center;
+}
+
+.landing-content h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 2em;
+}
+
+.landing-content p {
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 1.2em;
+    line-height: 1.6;
+}
+
+.button-group {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.feature-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin-top: 50px;
+}
+
+.feature-card {
+    padding: 30px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.feature-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+}
+
+.feature-card h3 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.feature-card p {
+    color: #666;
+    font-size: 1em;
+}

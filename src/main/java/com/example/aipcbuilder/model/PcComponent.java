@@ -1,6 +1,7 @@
 package com.example.aipcbuilder.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,13 +25,12 @@ public class PcComponent {
 
     private String description;
     private BigDecimal price;
-    private Integer wattage;
 
     private String manufacturer;
     private String model;
 
     @Column(columnDefinition = "jsonb")
-    private String specifications;
+    private String specifications; // Store as JSON string
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -47,6 +47,7 @@ public class PcComponent {
     public PcComponent() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.specifications = "{}"; // Initialize as empty JSON
     }
 
     // Getters and setters
@@ -94,14 +95,6 @@ public class PcComponent {
         this.price = BigDecimal.valueOf(price);
     }
 
-    public Integer getWattage() {
-        return wattage;
-    }
-
-    public void setWattage(Integer wattage) {
-        this.wattage = wattage;
-    }
-
     public String getManufacturer() {
         return manufacturer;
     }
@@ -124,6 +117,62 @@ public class PcComponent {
 
     public void setSpecifications(String specifications) {
         this.specifications = specifications;
+    }
+
+    // Helper method to set specifications from a Map
+    public void setSpecificationsMap(Map<String, Object> specifications) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            this.specifications = mapper.writeValueAsString(specifications);
+        } catch (Exception e) {
+            this.specifications = "{}";
+        }
+    }
+
+    // Helper method to get specifications as a Map
+    public Map<String, Object> getSpecificationsMap() {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            if (this.specifications != null && !this.specifications.isEmpty()) {
+                return mapper.readValue(this.specifications, new TypeReference<Map<String, Object>>() {});
+            }
+        } catch (Exception e) {
+            // If there's an error parsing, return empty map
+        }
+        return new HashMap<>();
+    }
+
+    // Convenience methods for common specifications
+    public String getSocket() {
+        return (String) getSpecificationsMap().get("socket");
+    }
+
+    public String getMemoryType() {
+        return (String) getSpecificationsMap().get("memoryType");
+    }
+
+    public String getFormFactor() {
+        return (String) getSpecificationsMap().get("formFactor");
+    }
+
+    public Integer getTdp() {
+        Object tdp = getSpecificationsMap().get("tdp");
+        if (tdp instanceof Integer) {
+            return (Integer) tdp;
+        } else if (tdp instanceof Double) {
+            return ((Double) tdp).intValue();
+        }
+        return null;
+    }
+
+    public Integer getCores() {
+        Object cores = getSpecificationsMap().get("cores");
+        if (cores instanceof Integer) {
+            return (Integer) cores;
+        } else if (cores instanceof Double) {
+            return ((Double) cores).intValue();
+        }
+        return null;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -2,18 +2,16 @@ package com.example.aipcbuilder.dto;
 
 public class LoginResponse {
     private String username;
-    private String email;
-    private String token;
     private String[] roles;
+    private String message;
 
     // Constructors
     public LoginResponse() {}
 
-    public LoginResponse(String username, String email, String token, String[] roles) {
+    public LoginResponse(String username, String[] roles, String message) {
         this.username = username;
-        this.email = email;
-        this.token = token;
         this.roles = roles;
+        this.message = message;
     }
 
     // Getters and setters
@@ -25,27 +23,19 @@ public class LoginResponse {
         this.username = username;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
     public String[] getRoles() {
         return roles;
     }
 
     public void setRoles(String[] roles) {
         this.roles = roles;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

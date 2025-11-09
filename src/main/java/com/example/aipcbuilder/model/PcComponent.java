@@ -1,10 +1,11 @@
 package com.example.aipcbuilder.model;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Type;
+
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,14 +30,9 @@ public class PcComponent {
     private String manufacturer;
     private String model;
 
+    @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
-    private String specifications; // Store as JSON string
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Map<String, Object> specifications = new HashMap<>();
 
     // Enums
     public enum ComponentType {
@@ -44,10 +40,17 @@ public class PcComponent {
     }
 
     // Constructors
-    public PcComponent() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        this.specifications = "{}"; // Initialize as empty JSON
+    public PcComponent() {}
+
+    public PcComponent(String name, ComponentType type, String description, BigDecimal price,
+                       String manufacturer, String model, Map<String, Object> specifications) {
+        this.name = name;
+        this.type = type;
+        this.description = description;
+        this.price = price;
+        this.manufacturer = manufacturer;
+        this.model = model;
+        this.specifications = specifications;
     }
 
     // Getters and setters
@@ -91,8 +94,13 @@ public class PcComponent {
         this.price = price;
     }
 
-    public void setPrice(Double price) {
-        this.price = BigDecimal.valueOf(price);
+    @JsonIgnore
+    public void setPriceFromDouble(Double price) {
+        if (price != null) {
+            this.price = BigDecimal.valueOf(price);
+        } else {
+            this.price = null;
+        }
     }
 
     public String getManufacturer() {
@@ -111,52 +119,33 @@ public class PcComponent {
         this.model = model;
     }
 
-    public String getSpecifications() {
+    public Map<String, Object> getSpecifications() {
         return specifications;
     }
 
-    public void setSpecifications(String specifications) {
+    public void setSpecifications(Map<String, Object> specifications) {
         this.specifications = specifications;
     }
 
-    // Helper method to set specifications from a Map
-    public void setSpecificationsMap(Map<String, Object> specifications) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            this.specifications = mapper.writeValueAsString(specifications);
-        } catch (Exception e) {
-            this.specifications = "{}";
-        }
-    }
-
-    // Helper method to get specifications as a Map
-    public Map<String, Object> getSpecificationsMap() {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            if (this.specifications != null && !this.specifications.isEmpty()) {
-                return mapper.readValue(this.specifications, new TypeReference<Map<String, Object>>() {});
-            }
-        } catch (Exception e) {
-            // If there's an error parsing, return empty map
-        }
-        return new HashMap<>();
-    }
-
     // Convenience methods for common specifications
+    @JsonIgnore
     public String getSocket() {
-        return (String) getSpecificationsMap().get("socket");
+        return (String) specifications.get("socket");
     }
 
+    @JsonIgnore
     public String getMemoryType() {
-        return (String) getSpecificationsMap().get("memoryType");
+        return (String) specifications.get("memoryType");
     }
 
+    @JsonIgnore
     public String getFormFactor() {
-        return (String) getSpecificationsMap().get("formFactor");
+        return (String) specifications.get("formFactor");
     }
 
+    @JsonIgnore
     public Integer getTdp() {
-        Object tdp = getSpecificationsMap().get("tdp");
+        Object tdp = specifications.get("tdp");
         if (tdp instanceof Integer) {
             return (Integer) tdp;
         } else if (tdp instanceof Double) {
@@ -165,29 +154,14 @@ public class PcComponent {
         return null;
     }
 
+    @JsonIgnore
     public Integer getCores() {
-        Object cores = getSpecificationsMap().get("cores");
+        Object cores = specifications.get("cores");
         if (cores instanceof Integer) {
             return (Integer) cores;
         } else if (cores instanceof Double) {
             return ((Double) cores).intValue();
         }
         return null;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 }

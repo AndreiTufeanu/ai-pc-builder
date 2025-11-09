@@ -44,12 +44,12 @@
                 <h3>Add New Component</h3>
                 <form id="componentForm">
                     <div class="form-group">
-                        <label for="componentName">Component Name</label>
-                        <input type="text" id="componentName" name="name" required>
+                        <label for="componentName">Component Name <span style="color: red;">*</span></label>
+                        <input type="text" id="componentName" name="name" required placeholder="e.g., AMD Ryzen 7 7800X3D">
                     </div>
 
                     <div class="form-group">
-                        <label for="componentType">Type</label>
+                        <label for="componentType">Type <span style="color: red;">*</span></label>
                         <select id="componentType" name="type" required>
                             <option value="">Select type...</option>
                             <option value="CPU">CPU</option>
@@ -64,13 +64,26 @@
 
                     <div class="form-group">
                         <label for="componentDescription">Description</label>
-                        <textarea id="componentDescription" name="description" rows="3"></textarea>
+                        <textarea id="componentDescription" name="description" rows="3" placeholder="Brief description of the component"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="componentManufacturer">Manufacturer</label>
+                        <input type="text" id="componentManufacturer" name="manufacturer" placeholder="e.g., AMD, NVIDIA, Corsair">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="componentModel">Model</label>
+                        <input type="text" id="componentModel" name="model" placeholder="e.g., Ryzen 7 7800X3D, RTX 4070">
                     </div>
 
                     <div class="form-group">
                         <label for="componentPrice">Price (EUR)</label>
-                        <input type="number" id="componentPrice" name="price" step="0.01">
+                        <input type="number" id="componentPrice" name="price" step="0.01" min="0" placeholder="e.g., 389.99">
                     </div>
+
+                    <!-- Dynamic fields will be inserted here -->
+                    <div id="dynamicFields"></div>
 
                     <div class="button-group">
                         <button type="submit" class="btn btn-primary">Add Component</button>
@@ -91,6 +104,7 @@
                 <strong>Training Mode:</strong> Your conversations here will be used to train the AI and improve recommendations for all users.
             </div>
 
+            <!-- CHAT SECTION - USING SAME CLASSES AS USER DASHBOARD -->
             <div class="chat-container">
                 <div class="chat-messages" id="adminChatMessages">
                     <div class="message ai">
@@ -116,12 +130,13 @@
 <script src="js/auth.js"></script>
 <script src="js/admin-dashboard.js"></script>
 <script>
+    // Authentication and role check
     const currentUser = localStorage.getItem('currentUser');
     if (!currentUser) {
         window.location.href = 'login.html';
     } else {
         const user = JSON.parse(currentUser);
-        if (!user.roles.includes('ROLE_ADMIN')) {
+        if (!user.roles || !user.roles.includes('ROLE_ADMIN')) {
             window.location.href = 'user-dashboard.html';
         }
         document.getElementById('usernameDisplay').textContent = user.username;

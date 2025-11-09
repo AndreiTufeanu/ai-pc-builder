@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -40,28 +41,53 @@ public class AdminController {
      * Add a new component to database
      */
     @PostMapping("/components")
-    public ResponseEntity<?> addComponent(@RequestBody PcComponent component) {
+    public ResponseEntity<?> addComponent(@RequestBody Map<String, Object> requestData) {
         try {
-            System.out.println("Adding new component: " + component.getName());
-            System.out.println("Type: " + component.getType());
-            System.out.println("Price: " + component.getPrice());
-            System.out.println("Manufacturer: " + component.getManufacturer());
-            System.out.println("Model: " + component.getModel());
+            System.out.println("Received component data: " + requestData);
 
             // Basic validation
-            if (component.getName() == null || component.getName().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Component name is required");
+            if (!requestData.containsKey("name") || requestData.get("name").toString().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("{\"message\": \"Component name is required\"}");
             }
 
-            if (component.getType() == null) {
-                return ResponseEntity.badRequest().body("Component type is required");
+            if (!requestData.containsKey("type")) {
+                return ResponseEntity.badRequest().body("{\"message\": \"Component type is required\"}");
             }
 
-            // Check if component already exists
-            if (component.getModel() != null && !component.getModel().trim().isEmpty()) {
-                boolean exists = componentRepository.existsByNameAndModel(component.getName(), component.getModel());
-                if (exists) {
-                    return ResponseEntity.badRequest().body("Component with this name and model already exists");
+            // Create new component entity
+            PcComponent component = new PcComponent();
+            component.setName(requestData.get("name").toString());
+            component.setType(PcComponent.ComponentType.valueOf(requestData.get("type").toString()));
+
+            if (requestData.containsKey("description")) {
+                component.setDescription(requestData.get("description").toString());
+            }
+
+            // Handle price
+            if (requestData.containsKey("price") && requestData.get("price") != null) {
+                try {
+                    Double priceValue = Double.parseDouble(requestData.get("price").toString());
+                    component.setPriceFromDouble(priceValue);
+                } catch (NumberFormatException e) {
+                    component.setPrice(null);
+                }
+            }
+
+            if (requestData.containsKey("manufacturer")) {
+                component.setManufacturer(requestData.get("manufacturer").toString());
+            }
+
+            if (requestData.containsKey("model")) {
+                component.setModel(requestData.get("model").toString());
+            }
+
+            // Handle specifications - now it's a Map directly
+            if (requestData.containsKey("specifications")) {
+                Object specsObj = requestData.get("specifications");
+                if (specsObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> specifications = (Map<String, Object>) specsObj;
+                    component.setSpecifications(specifications);
                 }
             }
 
@@ -73,8 +99,9 @@ public class AdminController {
 
         } catch (Exception e) {
             System.err.println("Error adding component: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError()
-                    .body("Error adding component: " + e.getMessage());
+                    .body("{\"message\": \"Error adding component: " + e.getMessage() + "\"}");
         }
     }
 
@@ -82,35 +109,74 @@ public class AdminController {
      * Update an existing component
      */
     @PutMapping("/components/{id}")
-    public ResponseEntity<?> updateComponent(@PathVariable Long id, @RequestBody PcComponent component) {
+    public ResponseEntity<?> updateComponent(@PathVariable Long id, @RequestBody Map<String, Object> requestData) {
         try {
             System.out.println("Updating component with ID: " + id);
+            System.out.println("Update data: " + requestData);
 
             // Check if component exists
-            Optional<PcComponent> existingComponent = componentRepository.findById(id);
-            if (existingComponent.isEmpty()) {
+            Optional<PcComponent> existingComponentOpt = componentRepository.findById(id);
+            if (existingComponentOpt.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
 
-            // Update the existing component
-            PcComponent componentToUpdate = existingComponent.get();
-            componentToUpdate.setName(component.getName());
-            componentToUpdate.setType(component.getType());
-            componentToUpdate.setDescription(component.getDescription());
-            componentToUpdate.setPrice(component.getPrice());
-            componentToUpdate.setManufacturer(component.getManufacturer());
-            componentToUpdate.setModel(component.getModel());
-            componentToUpdate.setSpecifications(component.getSpecifications());
+            PcComponent existingComponent = existingComponentOpt.get();
 
-            PcComponent updatedComponent = componentRepository.save(componentToUpdate);
+            // Update fields
+            if (requestData.containsKey("name")) {
+                existingComponent.setName(requestData.get("name").toString());
+            }
+
+            if (requestData.containsKey("type")) {
+                existingComponent.setType(PcComponent.ComponentType.valueOf(requestData.get("type").toString()));
+            }
+
+            if (requestData.containsKey("description")) {
+                existingComponent.setDescription(requestData.get("description").toString());
+            }
+
+            // Handle price
+            if (requestData.containsKey("price")) {
+                if (requestData.get("price") != null) {
+                    try {
+                        Double priceValue = Double.parseDouble(requestData.get("price").toString());
+                        existingComponent.setPriceFromDouble(priceValue);
+                    } catch (NumberFormatException e) {
+                        existingComponent.setPrice(null);
+                    }
+                } else {
+                    existingComponent.setPrice(null);
+                }
+            }
+
+            if (requestData.containsKey("manufacturer")) {
+                existingComponent.setManufacturer(requestData.get("manufacturer").toString());
+            }
+
+            if (requestData.containsKey("model")) {
+                existingComponent.setModel(requestData.get("model").toString());
+            }
+
+            // Handle specifications - now it's a Map directly
+            if (requestData.containsKey("specifications")) {
+                Object specsObj = requestData.get("specifications");
+                if (specsObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> specifications = (Map<String, Object>) specsObj;
+                    existingComponent.setSpecifications(specifications);
+                }
+            }
+
+            PcComponent updatedComponent = componentRepository.save(existingComponent);
             System.out.println("Component updated successfully: " + updatedComponent.getName());
 
             return ResponseEntity.ok(updatedComponent);
 
         } catch (Exception e) {
             System.err.println("Error updating component: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError()
-                    .body("Error updating component: " + e.getMessage());
+                    .body("{\"message\": \"Error updating component: " + e.getMessage() + "\"}");
         }
     }
 
@@ -135,7 +201,7 @@ public class AdminController {
         } catch (Exception e) {
             System.err.println("Error deleting component: " + e.getMessage());
             return ResponseEntity.internalServerError()
-                    .body("Error deleting component: " + e.getMessage());
+                    .body("{\"message\": \"Error deleting component: " + e.getMessage() + "\"}");
         }
     }
 
@@ -159,9 +225,6 @@ public class AdminController {
      */
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> adminChat(@RequestBody ChatRequest request) {
-        // TODO: Implement admin training chat with ChromaDB integration
-        // For now, return a stub response
-
         System.out.println("Admin training chat message: " + request.getMessage());
         System.out.println("User ID: " + request.getUserId());
 

@@ -41,7 +41,7 @@
 
             <!-- Add Component Form (initially hidden) -->
             <div id="addComponentForm" class="hidden">
-                <h3>Add New Component</h3>
+                <h3 id="componentFormTitle">Add New Component</h3>
                 <form id="componentForm">
                     <div class="form-group">
                         <label for="componentName">Component Name <span style="color: red;">*</span></label>
@@ -86,7 +86,7 @@
                     <div id="dynamicFields"></div>
 
                     <div class="button-group">
-                        <button type="submit" class="btn btn-primary">Add Component</button>
+                        <button type="submit" class="btn btn-primary" id="componentFormSubmitBtn">Add Component</button>
                         <button type="button" class="btn btn-secondary" onclick="hideAddComponentForm()">Cancel</button>
                     </div>
                 </form>

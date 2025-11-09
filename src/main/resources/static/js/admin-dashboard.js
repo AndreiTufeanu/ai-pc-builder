@@ -81,6 +81,8 @@ const componentSpecs = {
     ]
 };
 
+let currentEditId = null; // Track which component is being edited
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Admin dashboard loaded');
@@ -135,6 +137,10 @@ function initializeAdminDashboard() {
 // Component management functions
 function showAddComponentForm() {
     document.getElementById('addComponentForm').classList.remove('hidden');
+    document.getElementById('componentFormTitle').textContent = 'Add New Component';
+    document.getElementById('componentFormSubmitBtn').textContent = 'Add Component';
+    currentEditId = null;
+
     updateComponentFields(); // Initialize fields based on default selection
     updateAddComponentButtonState(); // Set initial button state
 }
@@ -144,6 +150,7 @@ function hideAddComponentForm() {
     document.getElementById('componentForm').reset();
     // Clear dynamic fields
     document.getElementById('dynamicFields').innerHTML = '';
+    currentEditId = null;
 }
 
 // Update button state based on component type selection
@@ -257,9 +264,11 @@ function updateComponentFields() {
     updateAddComponentButtonState();
 }
 
-// Update the component form submission to handle errors
+// Handle component form submission (both add and update)
 function handleComponentFormSubmit() {
     const formData = new FormData(document.getElementById('componentForm'));
+
+    // Build the component data object
     const componentData = {
         name: formData.get('name'),
         type: formData.get('type'),
@@ -285,8 +294,11 @@ function handleComponentFormSubmit() {
                 const value = formData.get(field.name);
                 if (value) {
                     // Convert numeric fields to numbers
-                    componentData.specifications[field.name] =
-                        field.type === 'number' ? parseFloat(value) : value;
+                    if (field.type === 'number') {
+                        componentData.specifications[field.name] = parseFloat(value);
+                    } else {
+                        componentData.specifications[field.name] = value;
+                    }
                 }
             }
         });
@@ -294,9 +306,16 @@ function handleComponentFormSubmit() {
 
     console.log('Submitting component:', componentData);
 
+    // Determine if this is an update or create
+    const url = currentEditId
+        ? `/api/admin/components/${currentEditId}`
+        : '/api/admin/components';
+
+    const method = currentEditId ? 'PUT' : 'POST';
+
     // Send to backend
-    fetch('/api/admin/components', {
-        method: 'POST',
+    fetch(url, {
+        method: method,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -304,12 +323,16 @@ function handleComponentFormSubmit() {
     })
         .then(response => {
             if (!response.ok) {
-                return response.text().then(text => { throw new Error(text) });
+                return response.text().then(text => {
+                    console.error('Server response:', text);
+                    throw new Error(text);
+                });
             }
             return response.json();
         })
         .then(component => {
-            alert('Component added successfully!');
+            const action = currentEditId ? 'updated' : 'added';
+            alert(`Component ${action} successfully!`);
             hideAddComponentForm();
             loadComponents(); // Reload the list with new data
         })
@@ -318,9 +341,14 @@ function handleComponentFormSubmit() {
             // Try to parse error message from server
             try {
                 const errorData = JSON.parse(error.message);
-                alert('Error adding component: ' + (errorData.message || error.message));
+                alert('Error saving component: ' + (errorData.message || error.message));
             } catch (e) {
-                alert('Error adding component: ' + error.message);
+                // If it's not JSON, show the raw error
+                if (error.message.includes('Content-Type')) {
+                    alert('Error: Server cannot process the request. Please check the component data and try again.');
+                } else {
+                    alert('Error saving component: ' + error.message);
+                }
             }
         });
 }
@@ -330,14 +358,19 @@ function loadComponents() {
     const componentsList = document.getElementById('componentsList');
     componentsList.innerHTML = '<p>Loading components...</p>';
 
+    console.log('Fetching components from /api/admin/components...');
+
     fetch('/api/admin/components')
         .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error('Network response was not ok: ' + response.status);
             }
             return response.json();
         })
         .then(components => {
+            console.log('Components received:', components);
             if (components.length === 0) {
                 componentsList.innerHTML = '<p>No components found in database. Add your first component!</p>';
                 return;
@@ -360,15 +393,8 @@ function createComponentCard(component) {
     const card = document.createElement('div');
     card.className = 'component-card';
 
-    // Parse the specifications JSON string to object
-    let specs = {};
-    try {
-        if (component.specifications) {
-            specs = JSON.parse(component.specifications);
-        }
-    } catch (e) {
-        console.error('Error parsing specifications:', e);
-    }
+    // Use specifications directly (it's now a Map, not a JSON string)
+    const specs = component.specifications || {};
 
     // Format specifications for display
     let specsText = '';
@@ -435,11 +461,81 @@ function deleteComponent(componentId) {
     }
 }
 
-// Edit component function (stub for now)
+// Edit component function
 function editComponent(componentId) {
-    alert('Edit functionality will be implemented in the next phase. Component ID: ' + componentId);
-    // TODO: Implement edit functionality
-    // This would open a pre-filled form with the component data
+    // Fetch component details
+    fetch(`/api/admin/components/${componentId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch component details');
+            }
+            return response.json();
+        })
+        .then(component => {
+            // Populate the form with component data
+            document.getElementById('componentName').value = component.name || '';
+            document.getElementById('componentType').value = component.type || '';
+            document.getElementById('componentDescription').value = component.description || '';
+            document.getElementById('componentManufacturer').value = component.manufacturer || '';
+            document.getElementById('componentModel').value = component.model || '';
+            document.getElementById('componentPrice').value = component.price || '';
+
+            // Update dynamic fields based on type
+            updateComponentFields();
+
+            // Populate dynamic fields with existing specifications
+            setTimeout(() => {
+                populateSpecificationFields(component);
+            }, 100);
+
+            // Change form to edit mode
+            document.getElementById('addComponentForm').classList.remove('hidden');
+            document.getElementById('componentFormTitle').textContent = 'Edit Component';
+            document.getElementById('componentFormSubmitBtn').textContent = 'Update Component';
+            currentEditId = componentId;
+        })
+        .catch(error => {
+            console.error('Error fetching component:', error);
+            alert('Error loading component details: ' + error.message);
+        });
+}
+
+// Populate specification fields with existing data
+function populateSpecificationFields(component) {
+    let specs = {};
+    try {
+        if (component.specifications) {
+            specs = JSON.parse(component.specifications);
+        }
+    } catch (e) {
+        console.error('Error parsing specifications:', e);
+    }
+
+    // Populate each specification field
+    Object.keys(specs).forEach(key => {
+        const value = specs[key];
+
+        // Find the input/select element
+        const input = document.querySelector(`[name="${key}"]`);
+        if (input) {
+            if (input.type === 'checkbox') {
+                // For checkbox groups, we need to handle differently
+                const checkboxes = document.querySelectorAll(`input[name="${key}"]`);
+                if (Array.isArray(value)) {
+                    // If value is an array, check all matching checkboxes
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = value.includes(checkbox.value);
+                    });
+                }
+            } else if (input.type === 'select-one') {
+                // For select elements
+                input.value = value;
+            } else {
+                // For text/number inputs
+                input.value = value;
+            }
+        }
+    });
 }
 
 // Admin chat functionality

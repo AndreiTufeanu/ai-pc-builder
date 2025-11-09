@@ -1,11 +1,47 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
+# -----------------------
+# Frontend (Angular/Node)
+# -----------------------
+/frontend/node_modules/
+/frontend/dist/
+/frontend/tmp/
+/frontend/out-tsc/
+/frontend/bazel-out/
+/frontend/.angular/cache/
+/frontend/.sass-cache/
+/frontend/typings/
+/frontend/__screenshots__/
+/frontend/.history/
+# npm/yarn logs
+/frontend/npm-debug.log
+/frontend/yarn-error.log
+# Angular compiled output (generic)
+frontend/dist/
+frontend/out-tsc/
+
+# -----------------------
+# Backend (Maven / Java)
+# -----------------------
+/backend/target/
+/backend/.mvn/wrapper/maven-wrapper.jar
+# keep module-level target/build folders (if you have multi-module)
 !**/src/main/**/target/
 !**/src/test/**/target/
+# Gradle/NetBeans build exceptions (if present)
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-### STS ###
-.apt_generated
+# -----------------------
+# IDEs, Editors & Tools
+# -----------------------
+# IntelliJ
+/.idea/
+/*.iws
+/*.iml
+/*.ipr
+
+# STS (Spring Tool Suite)
+/.apt_generated
 .classpath
 .factorypath
 .project
@@ -13,21 +49,31 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
+# VS Code (allow committing workspace settings, but ignore everything else)
+.vscode/*
+!/.vscode/settings.json
+!/.vscode/tasks.json
+!/.vscode/launch.json
+!/.vscode/extensions.json
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+# Eclipse / other
+.c9/
+*.launch
+*.sublime-workspace
 
-### VS Code ###
-.vscode/
+# -----------------------
+# Misc / Test / Coverage
+# -----------------------
+/coverage/
+/connect.lock
+/libpeerconnection.log
+testem.log
+__screenshots__/
+npm-debug.log
+yarn-error.log
+
+# -----------------------
+# System files
+# -----------------------
+.DS_Store
+Thumbs.db

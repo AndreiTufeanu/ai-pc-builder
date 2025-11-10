@@ -35,7 +35,7 @@ build/
 # IDEs, Editors & Tools
 # -----------------------
 # IntelliJ
-/.idea/
+/backend/.idea/
 /*.iws
 /*.iml
 /*.ipr

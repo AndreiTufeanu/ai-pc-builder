@@ -1,0 +1,38 @@
+<div class="welcome-container">
+  <div class="welcome-card">
+    <div class="logo-section">
+      <h1 class="app-title">PC Builder AI</h1>
+      <p class="app-subtitle">Build your perfect PC with AI assistance</p>
+    </div>
+    
+    <div class="features-section">
+      <div class="feature-card">
+        <h3>🤖 AI-Powered</h3>
+        <p>Get intelligent component recommendations</p>
+      </div>
+      <div class="feature-card">
+        <h3>🔧 Guided Builds</h3>
+        <p>Step-by-step assistance for your PC build</p>
+      </div>
+      <div class="feature-card">
+        <h3>💾 Component Library</h3>
+        <p>Access extensive database of PC parts</p>
+      </div>
+    </div>
+
+    <div class="auth-section">
+      <button 
+        class="btn btn-primary" 
+        (click)="navigateToLogin()"
+        aria-label="Login to your account">
+        Login
+      </button>
+      <button 
+        class="btn btn-secondary" 
+        (click)="navigateToSignup()"
+        aria-label="Create new account">
+        Sign Up
+      </button>
+    </div>
+  </div>
+</div>

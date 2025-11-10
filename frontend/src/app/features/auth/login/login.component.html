@@ -1,0 +1,62 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-subtitle">Sign in to your PC Builder AI account</p>
+    </div>
+
+    <form (ngSubmit)="onLogin()" class="auth-form">
+      <div class="form-group">
+        <label for="username" class="form-label">Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          [(ngModel)]="credentials.username"
+          class="form-input"
+          placeholder="Enter your username"
+          required
+          [disabled]="isLoading">
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          [(ngModel)]="credentials.password"
+          class="form-input"
+          placeholder="Enter your password"
+          required
+          [disabled]="isLoading">
+      </div>
+
+      @if (errorMessage) {
+        <div class="error-message">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <button
+        type="submit"
+        class="btn btn-primary btn-full"
+        [disabled]="isLoading">
+        @if (!isLoading) {
+          <span>Sign In</span>
+        }
+        @if (isLoading) {
+          <span>Signing In...</span>
+        }
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p class="auth-link-text">
+        Don't have an account? 
+        <a (click)="navigateToSignup()" class="auth-link">Sign up here</a>
+      </p>
+      <a (click)="navigateToHome()" class="back-link">← Back to Home</a>
+    </div>
+  </div>
+</div>

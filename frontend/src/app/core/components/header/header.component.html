@@ -1,0 +1,30 @@
+<header class="header">
+  <div class="header-content">
+    <div class="logo" (click)="navigateToHome()">
+      <h1>PC Builder AI</h1>
+    </div>
+    
+    <nav class="nav">
+      @if (authService.isAuthenticated()) {
+        <div class="user-info">
+          <span class="username">Welcome, {{ authService.currentUser()?.username }}</span>
+          <span class="user-badge" [class.admin]="authService.isAdmin()">
+            {{ authService.isAdmin() ? 'Admin' : 'User' }}
+          </span>
+          <button class="btn btn-outline btn-sm" (click)="navigateToDashboard()">
+            Dashboard
+          </button>
+          <button class="btn btn-secondary btn-sm" (click)="logout()">
+            Logout
+          </button>
+        </div>
+      } @else {
+        <div class="auth-links">
+          <button class="btn btn-outline btn-sm" (click)="navigateToHome()">
+            Home
+          </button>
+        </div>
+      }
+    </nav>
+  </div>
+</header>

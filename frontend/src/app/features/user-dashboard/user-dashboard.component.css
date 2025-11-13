@@ -164,64 +164,6 @@
   margin-bottom: 20px;
 }
 
-/* Importance Selector */
-.importance-selector {
-  margin-bottom: 30px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.importance-options {
-  display: flex;
-  gap: 20px;
-  margin-top: 10px;
-}
-
-.importance-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.importance-label {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.importance-label.low {
-  background: #e2e3e5;
-  color: #383d41;
-}
-
-.importance-label.medium {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.importance-label.high {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.importance-option input:checked + .importance-label.low {
-  background: #17a2b8;
-  color: white;
-}
-
-.importance-option input:checked + .importance-label.medium {
-  background: #ffc107;
-  color: black;
-}
-
-.importance-option input:checked + .importance-label.high {
-  background: #dc3545;
-  color: white;
-}
-
 /* Specifications Form */
 .specifications-form {
   display: grid;

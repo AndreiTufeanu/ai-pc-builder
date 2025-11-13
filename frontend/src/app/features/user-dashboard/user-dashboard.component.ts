@@ -1,9 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ViewChildren, QueryList, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ComponentService, ComponentType, type ComponentSpec } from '../../core/services/component.service';
+import { ChatService } from '../../core/services/chat.service';
 
 interface BuildRequirement {
   type: ComponentType;
@@ -18,10 +19,10 @@ interface BuildRequirement {
   templateUrl: './user-dashboard.component.html',
   styleUrls: ['./user-dashboard.component.css']
 })
-export class UserDashboardComponent {
+export class UserDashboardComponent implements AfterViewChecked {
   activeTab = signal<'chat' | 'guided'>('guided');
   protected readonly Object = Object;
-  
+  @ViewChildren('messageElem') private messageElems!: QueryList<ElementRef<HTMLElement>>;
   // Chat functionality
   chatMessages = signal<any[]>([
     { role: 'assistant', content: 'Hello! I\'m here to help you build your perfect PC. Ask me anything about components, compatibility, or budget recommendations!' }
@@ -54,7 +55,8 @@ export class UserDashboardComponent {
   constructor(
     private router: Router,
     public authService: AuthService,
-    private componentService: ComponentService
+    private componentService: ComponentService,
+    private chatService: ChatService 
   ) {
     // Initialize empty requirements for all component types
     const initialRequirements: { [key in ComponentType]?: BuildRequirement } = {};
@@ -70,32 +72,55 @@ export class UserDashboardComponent {
     this.updateCurrentRequirements();
   }
 
+  ngAfterViewChecked(): void {
+    const last = this.messageElems && this.messageElems.length ? this.messageElems.last : null;
+    if (last) {
+      try {
+        last.nativeElement.scrollIntoView({ behavior: 'instant', block: 'end' });
+      } catch {
+        // Ignore scrolling errors
+      }
+    }
+  }
+
   setActiveTab(tab: 'chat' | 'guided'): void {
     this.activeTab.set(tab);
   }
 
   // Chat methods
   sendMessage(): void {
-    const message = this.newMessage.trim();
-    if (!message) return;
+      const message = this.newMessage.trim();
+      if (!message) return;
 
-    this.chatMessages.update(messages => [
-      ...messages,
-      { role: 'user', content: message }
-    ]);
-
-    this.newMessage = '';
-    this.isChatLoading = true;
-
-    // TODO: Connect to actual AI service
-    setTimeout(() => {
+      // Add user message to chat
       this.chatMessages.update(messages => [
         ...messages,
-        { role: 'assistant', content: 'I understand you\'re looking for PC building advice. When connected to the AI service, I\'ll provide personalized recommendations based on your needs and budget.' }
+        { role: 'user', content: message }
       ]);
-      this.isChatLoading = false;
-    }, 1500);
-  }
+
+      this.newMessage = '';
+      this.isChatLoading = true;
+
+      // Call the actual AI service
+      this.chatService.sendUserMessage(message).subscribe({
+        next: (response) => {
+          this.chatMessages.update(messages => [
+            ...messages,
+            { role: 'assistant', content: response.response }
+          ]);
+          this.isChatLoading = false;
+        },
+        error: (error) => {
+          console.error('Chat error:', error);
+          // Fallback response if service fails
+          this.chatMessages.update(messages => [
+            ...messages,
+            { role: 'assistant', content: 'I apologize, but I\'m having trouble connecting to the AI service right now. Please try again in a moment.' }
+          ]);
+          this.isChatLoading = false;
+        }
+      });
+    }
 
   // Guided build methods
   nextStep(): void {

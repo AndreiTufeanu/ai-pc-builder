@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ComponentService, PcComponent, ComponentType } from '../../core/services/component.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -12,104 +13,112 @@ import { FormsModule } from '@angular/forms';
 export class AdminDashboardComponent {
   activeTab = signal<'chat' | 'components'>('components');
   
-  // Sample data for components (will be replaced with API data)
-  components = signal<any[]>([
-    {
-      id: 1,
-      name: 'AMD Ryzen 7 7800X3D',
-      type: 'CPU',
-      price: 389.99,
-      manufacturer: 'AMD',
-      model: 'Ryzen 7 7800X3D'
-    },
-    {
-      id: 2,
-      name: 'NVIDIA GeForce RTX 4070',
-      type: 'GPU', 
-      price: 549.99,
-      manufacturer: 'NVIDIA',
-      model: 'RTX 4070'
-    },
-    {
-      id: 3,
-      name: 'Corsair RM750x',
-      type: 'PSU',
-      price: 119.99,
-      manufacturer: 'Corsair',
-      model: 'RM750x'
-    }
-  ]);
+  // Components data
+  components = signal<PcComponent[]>([]);
+  isLoading = signal(false);
 
-  // Chat functionality - using regular properties for ngModel
+  // Chat functionality
   chatMessages = signal<any[]>([
     { role: 'assistant', content: 'Hello! I\'m ready to help you manage PC components and answer questions.' }
   ]);
-  newMessage = ''; // Regular property for ngModel
+  newMessage = '';
 
-  // Component form data - using regular properties for ngModel
+  // Component form data
   showComponentForm = signal(false);
-  editingComponent = signal<any>(null);
+  editingComponent = signal<PcComponent | null>(null);
   componentForm = {
     name: '',
-    type: 'CPU',
+    type: 'CPU' as ComponentType,
     price: '',
     manufacturer: '',
     model: '',
-    description: ''
+    description: '',
+    specifications: {} as { [key: string]: any }
   };
+
+  // Current specifications for the selected type
+  currentSpecs = signal<any[]>([]);
+
+  constructor(private componentService: ComponentService) {
+    this.loadComponents();
+  }
 
   setActiveTab(tab: 'chat' | 'components'): void {
     this.activeTab.set(tab);
   }
 
-  // Chat methods
-  sendMessage(): void {
-    const message = this.newMessage.trim();
-    if (!message) return;
-
-    // Add user message
-    this.chatMessages.update(messages => [
-      ...messages,
-      { role: 'user', content: message }
-    ]);
-
-    // Clear input
-    this.newMessage = '';
-
-    // Simulate AI response (will be replaced with actual API call)
-    setTimeout(() => {
-      this.chatMessages.update(messages => [
-        ...messages,
-        { role: 'assistant', content: 'This is a simulated response. When connected, this will interact with the AI model for component knowledge.' }
-      ]);
-    }, 1000);
+  // Component CRUD methods
+  loadComponents(): void {
+    this.isLoading.set(true);
+    this.componentService.getAllComponents().subscribe({
+      next: (components) => {
+        this.components.set(components);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading components:', error);
+        this.isLoading.set(false);
+      }
+    });
   }
 
-  // Component CRUD methods
+  onTypeChange(): void {
+    // Update specifications when type changes
+    const specs = this.componentService.getSpecsForType(this.componentForm.type);
+    this.currentSpecs.set(specs);
+    
+    // Initialize specifications object
+    const newSpecs: { [key: string]: any } = {};
+    specs.forEach(spec => {
+      if (spec.type === 'checkbox-group') {
+        newSpecs[spec.name] = [];
+      } else {
+        newSpecs[spec.name] = this.componentForm.specifications[spec.name] || '';
+      }
+    });
+    this.componentForm.specifications = newSpecs;
+  }
+
   openAddComponentForm(): void {
     this.componentForm = {
       name: '',
-      type: 'CPU',
+      type: ComponentType.CPU,
       price: '',
       manufacturer: '',
       model: '',
-      description: ''
+      description: '',
+      specifications: {}
     };
     this.editingComponent.set(null);
+    this.onTypeChange(); // Initialize specs for default type
     this.showComponentForm.set(true);
   }
 
-  openEditComponent(component: any): void {
+  openEditComponent(component: PcComponent): void {
     this.componentForm = {
       name: component.name,
       type: component.type,
-      price: component.price.toString(),
-      manufacturer: component.manufacturer,
-      model: component.model,
-      description: component.description || ''
+      price: component.price?.toString() || '',
+      manufacturer: component.manufacturer || '',
+      model: component.model || '',
+      description: component.description || '',
+      specifications: { ...component.specifications }
     };
     this.editingComponent.set(component);
+    this.onTypeChange(); // Initialize specs for component type
     this.showComponentForm.set(true);
+  }
+
+  onCheckboxChange(specName: string, value: string, event: any): void {
+    const checked = event.target.checked;
+    if (checked) {
+      if (!this.componentForm.specifications[specName].includes(value)) {
+        this.componentForm.specifications[specName].push(value);
+      }
+    } else {
+      this.componentForm.specifications[specName] = 
+        this.componentForm.specifications[specName].filter((item: string) => item !== value);
+    }
   }
 
   saveComponent(): void {
@@ -119,36 +128,67 @@ export class AdminDashboardComponent {
       return;
     }
 
-    if (this.editingComponent()) {
-      // Update existing component
-      this.components.update(comps => 
-        comps.map(comp => 
-          comp.id === this.editingComponent()!.id 
-            ? { 
-                ...comp, 
-                ...this.componentForm, 
-                price: parseFloat(this.componentForm.price) || 0 
-              }
-            : comp
-        )
-      );
-    } else {
-      // Add new component
-      const newComponent = {
-        id: Math.max(...this.components().map(c => c.id)) + 1,
-        ...this.componentForm,
-        price: parseFloat(this.componentForm.price) || 0
-      };
-      this.components.update(comps => [...comps, newComponent]);
+    // Validate required specifications
+    const missingRequired = this.currentSpecs().filter(spec => 
+      spec.required && (!this.componentForm.specifications[spec.name] || 
+        (Array.isArray(this.componentForm.specifications[spec.name]) && 
+         this.componentForm.specifications[spec.name].length === 0))
+    );
+
+    if (missingRequired.length > 0) {
+      alert(`Please fill in all required specifications: ${missingRequired.map(s => s.label).join(', ')}`);
+      return;
     }
 
-    this.showComponentForm.set(false);
-    this.editingComponent.set(null);
+    const componentData: PcComponent = {
+      name: this.componentForm.name,
+      type: this.componentForm.type,
+      description: this.componentForm.description || undefined,
+      price: this.componentForm.price ? parseFloat(this.componentForm.price) : undefined,
+      manufacturer: this.componentForm.manufacturer || undefined,
+      model: this.componentForm.model || undefined,
+      specifications: this.componentForm.specifications
+    };
+
+    if (this.editingComponent()) {
+      // Update existing component
+      this.componentService.updateComponent(this.editingComponent()!.id!, componentData).subscribe({
+        next: () => {
+          this.loadComponents();
+          this.showComponentForm.set(false);
+          this.editingComponent.set(null);
+        },
+        error: (error) => {
+          console.error('Error updating component:', error);
+          alert('Error updating component');
+        }
+      });
+    } else {
+      // Add new component
+      this.componentService.createComponent(componentData).subscribe({
+        next: () => {
+          this.loadComponents();
+          this.showComponentForm.set(false);
+        },
+        error: (error) => {
+          console.error('Error creating component:', error);
+          alert('Error creating component');
+        }
+      });
+    }
   }
 
-  deleteComponent(component: any): void {
+  deleteComponent(component: PcComponent): void {
     if (confirm(`Are you sure you want to delete ${component.name}?`)) {
-      this.components.update(comps => comps.filter(c => c.id !== component.id));
+      this.componentService.deleteComponent(component.id!).subscribe({
+        next: () => {
+          this.loadComponents();
+        },
+        error: (error) => {
+          console.error('Error deleting component:', error);
+          alert('Error deleting component');
+        }
+      });
     }
   }
 
@@ -156,4 +196,37 @@ export class AdminDashboardComponent {
     this.showComponentForm.set(false);
     this.editingComponent.set(null);
   }
+
+  // Chat methods (unchanged)
+  sendMessage(): void {
+    const message = this.newMessage.trim();
+    if (!message) return;
+
+    this.chatMessages.update(messages => [
+      ...messages,
+      { role: 'user', content: message }
+    ]);
+
+    this.newMessage = '';
+
+    setTimeout(() => {
+      this.chatMessages.update(messages => [
+        ...messages,
+        { role: 'assistant', content: 'This is a simulated response. When connected, this will interact with the AI model for component knowledge.' }
+      ]);
+    }, 1000);
+  }
+
+  getImportantSpecs(component: PcComponent): { key: string; label: string; value: any }[] {
+  const specs = this.componentService.getSpecsForType(component.type);
+  const importantSpecs = specs.filter(spec => 
+    ['socket', 'memory', 'wattage', 'capacity', 'formFactor'].includes(spec.name)
+  );
+  
+  return importantSpecs.map(spec => ({
+    key: spec.name,
+    label: spec.label,
+    value: component.specifications[spec.name]
+  })).filter(spec => spec.value && spec.value !== '');
+}
 }

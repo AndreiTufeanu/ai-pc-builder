@@ -1,6 +1,7 @@
 package com.example.aipcbuilder.dto;
 
 public class LoginResponse {
+    private Long userId; // Add this field
     private String username;
     private String[] roles;
     private String message;
@@ -8,13 +9,22 @@ public class LoginResponse {
     // Constructors
     public LoginResponse() {}
 
-    public LoginResponse(String username, String[] roles, String message) {
+    public LoginResponse(Long userId, String username, String[] roles, String message) {
+        this.userId = userId;
         this.username = username;
         this.roles = roles;
         this.message = message;
     }
 
     // Getters and setters
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
     public String getUsername() {
         return username;
     }

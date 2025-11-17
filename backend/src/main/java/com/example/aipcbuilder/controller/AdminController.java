@@ -2,8 +2,10 @@ package com.example.aipcbuilder.controller;
 
 import com.example.aipcbuilder.dto.ChatRequest;
 import com.example.aipcbuilder.dto.ChatResponse;
+import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.repository.PcComponentRepository;
+import com.example.aipcbuilder.service.ChatMessageService;
 import com.example.aipcbuilder.service.ChromaDBService;
 import com.example.aipcbuilder.service.PCBuilderService;
 import org.springframework.http.ResponseEntity;
@@ -21,11 +23,16 @@ public class AdminController {
     private final PcComponentRepository componentRepository;
     private final PCBuilderService pcBuilderService;
     private final ChromaDBService chromaDBService;
+    private final ChatMessageService chatMessageService;
 
-    public AdminController(PcComponentRepository componentRepository, PCBuilderService pcBuilderService, ChromaDBService chromaDBService) {
+    public AdminController(PcComponentRepository componentRepository,
+                           PCBuilderService pcBuilderService,
+                           ChromaDBService chromaDBService,
+                           ChatMessageService chatMessageService) {
         this.componentRepository = componentRepository;
         this.pcBuilderService = pcBuilderService;
         this.chromaDBService = chromaDBService;
+        this.chatMessageService = chatMessageService;
     }
 
     /**
@@ -241,11 +248,22 @@ public class AdminController {
      */
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> adminChat(@RequestBody ChatRequest request) {
-        System.out.println("Admin training chat message: " + request.getMessage());
-        System.out.println("User ID: " + request.getUserId());
+        System.out.println("Admin chat message from user ID: " + request.getUserId());
+        System.out.println("Message: " + request.getMessage());
+
+        // Get AI training response (this also stores in ChromaDB)
         String response = pcBuilderService.getAdminTrainingResponse(request.getMessage(), request.getUserId());
 
-        ChatResponse chatResponse = new ChatResponse(response);
+        // Save both admin message and AI response to database
+        ChatMessage savedMessage = chatMessageService.saveChatMessage(
+                request.getUserId(),
+                request.getMessage(),
+                response
+        );
+
+        System.out.println("Admin chat message saved with ID: " + savedMessage.getId());
+
+        ChatResponse chatResponse = new ChatResponse(response, savedMessage.getId());
         return ResponseEntity.ok(chatResponse);
     }
 }

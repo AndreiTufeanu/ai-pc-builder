@@ -33,19 +33,19 @@ public class AuthController {
         Optional<User> userOptional = userRepository.findByUsername(request.getUsername());
 
         if (userOptional.isEmpty()) {
-            return ResponseEntity.status(401).body(new LoginResponse(null, null, "Invalid username or password"));
+            return ResponseEntity.status(401).body(new LoginResponse(null, null, null, "Invalid username or password"));
         }
 
         User user = userOptional.get();
 
         // Check password
         if (!user.getPassword().equals(request.getPassword())) {
-            return ResponseEntity.status(401).body(new LoginResponse(null, null, "Invalid username or password"));
+            return ResponseEntity.status(401).body(new LoginResponse(null, null, null, "Invalid username or password"));
         }
 
         // Check if user is enabled
         if (!user.isEnabled()) {
-            return ResponseEntity.status(401).body(new LoginResponse(null, null, "Account is disabled"));
+            return ResponseEntity.status(401).body(new LoginResponse(null, null, null, "Account is disabled"));
         }
 
         // Convert roles to array
@@ -53,7 +53,9 @@ public class AuthController {
                 .map(role -> role.getName())
                 .toArray(String[]::new);
 
+        // Return user ID in the response
         LoginResponse response = new LoginResponse(
+                user.getId(), // Add user ID
                 user.getUsername(),
                 roles,
                 "Login successful"

@@ -2,6 +2,9 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ComponentService, PcComponent, ComponentType } from '../../core/services/component.service';
+import { ChatService } from '../../core/services/chat.service';
+import { AuthService } from '../../core/services/auth.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -12,18 +15,18 @@ import { ComponentService, PcComponent, ComponentType } from '../../core/service
 })
 export class AdminDashboardComponent {
   activeTab = signal<'chat' | 'components'>('components');
-  
+
   // Components data
   components = signal<PcComponent[]>([]);
   isLoading = signal(false);
 
   // Chat functionality
-  chatMessages = signal<any[]>([
-    { role: 'assistant', content: 'Hello! I\'m ready to help you manage PC components and answer questions.' }
-  ]);
+  chatMessages = signal<any[]>([]);
   newMessage = '';
+  isChatLoading = false;
+  private chatSubscription?: Subscription;
 
-  // Component form data
+  // Component form data (unchanged)
   showComponentForm = signal(false);
   editingComponent = signal<PcComponent | null>(null);
   componentForm = {
@@ -35,16 +38,61 @@ export class AdminDashboardComponent {
     description: '',
     specifications: {} as { [key: string]: any }
   };
-
-  // Current specifications for the selected type
   currentSpecs = signal<any[]>([]);
 
-  constructor(private componentService: ComponentService) {
+  constructor(
+    private componentService: ComponentService,
+    private chatService: ChatService,
+    private authService: AuthService
+  ) {
     this.loadComponents();
+  }
+
+  ngOnInit(): void {
+    this.loadChatHistory();
+  }
+
+  ngOnDestroy(): void {
+    this.chatSubscription?.unsubscribe();
+  }
+
+  loadChatHistory(): void {
+    const userId = this.authService.getCurrentUserId();
+    if (!userId) {
+      console.error('No user ID available');
+      this.showFallbackWelcome();
+      return;
+    }
+
+    console.log('Loading chat history for admin user ID:', userId);
+
+    this.chatSubscription = this.chatService.getChatHistory(userId).subscribe({
+      next: (messages) => {
+        console.log('Received admin messages:', messages);
+        if (messages.length === 0) {
+          this.chatMessages.set([
+            { role: 'assistant', content: 'Hello! I\'m ready to help you manage PC components and answer questions.' }
+          ]);
+        } else {
+          const formattedMessages = messages.flatMap(msg => [
+            { role: 'user', content: msg.userMessage },
+            { role: 'assistant', content: msg.aiResponse }
+          ]);
+          this.chatMessages.set(formattedMessages);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading admin chat history:', error);
+        this.showFallbackWelcome();
+      }
+    });
   }
 
   setActiveTab(tab: 'chat' | 'components'): void {
     this.activeTab.set(tab);
+    if (tab === 'chat') {
+      this.loadChatHistory();
+    }
   }
 
   // Component CRUD methods
@@ -66,7 +114,7 @@ export class AdminDashboardComponent {
     // Update specifications when type changes
     const specs = this.componentService.getSpecsForType(this.componentForm.type);
     this.currentSpecs.set(specs);
-    
+
     // Initialize specifications object
     const newSpecs: { [key: string]: any } = {};
     specs.forEach(spec => {
@@ -116,7 +164,7 @@ export class AdminDashboardComponent {
         this.componentForm.specifications[specName].push(value);
       }
     } else {
-      this.componentForm.specifications[specName] = 
+      this.componentForm.specifications[specName] =
         this.componentForm.specifications[specName].filter((item: string) => item !== value);
     }
   }
@@ -129,10 +177,10 @@ export class AdminDashboardComponent {
     }
 
     // Validate required specifications
-    const missingRequired = this.currentSpecs().filter(spec => 
-      spec.required && (!this.componentForm.specifications[spec.name] || 
-        (Array.isArray(this.componentForm.specifications[spec.name]) && 
-         this.componentForm.specifications[spec.name].length === 0))
+    const missingRequired = this.currentSpecs().filter(spec =>
+      spec.required && (!this.componentForm.specifications[spec.name] ||
+        (Array.isArray(this.componentForm.specifications[spec.name]) &&
+          this.componentForm.specifications[spec.name].length === 0))
     );
 
     if (missingRequired.length > 0) {
@@ -202,31 +250,59 @@ export class AdminDashboardComponent {
     const message = this.newMessage.trim();
     if (!message) return;
 
+    const userId = this.authService.getCurrentUserId();
+    if (!userId) {
+      console.error('No user ID available');
+      return;
+    }
+
+    // Add user message immediately
     this.chatMessages.update(messages => [
       ...messages,
       { role: 'user', content: message }
     ]);
 
     this.newMessage = '';
+    this.isChatLoading = true;
 
-    setTimeout(() => {
-      this.chatMessages.update(messages => [
-        ...messages,
-        { role: 'assistant', content: 'This is a simulated response. When connected, this will interact with the AI model for component knowledge.' }
-      ]);
-    }, 1000);
+    console.log('Sending admin message for user ID:', userId);
+
+    this.chatService.sendAdminMessage(message, userId).subscribe({
+      next: (response) => {
+        this.chatMessages.update(messages => [
+          ...messages,
+          { role: 'assistant', content: response.response }
+        ]);
+        this.isChatLoading = false;
+      },
+      error: (error) => {
+        console.error('Admin chat error:', error);
+        this.chatMessages.update(messages => [
+          ...messages,
+          { role: 'assistant', content: 'I apologize, but I\'m having trouble connecting right now. Please try again.' }
+        ]);
+        this.isChatLoading = false;
+      }
+    });
   }
 
   getImportantSpecs(component: PcComponent): { key: string; label: string; value: any }[] {
-  const specs = this.componentService.getSpecsForType(component.type);
-  const importantSpecs = specs.filter(spec => 
-    ['socket', 'memory', 'wattage', 'capacity', 'formFactor'].includes(spec.name)
-  );
-  
-  return importantSpecs.map(spec => ({
-    key: spec.name,
-    label: spec.label,
-    value: component.specifications[spec.name]
-  })).filter(spec => spec.value && spec.value !== '');
-}
+    const specs = this.componentService.getSpecsForType(component.type);
+    const importantSpecs = specs.filter(spec =>
+      ['socket', 'memory', 'wattage', 'capacity', 'formFactor'].includes(spec.name)
+    );
+
+    return importantSpecs.map(spec => ({
+      key: spec.name,
+      label: spec.label,
+      value: component.specifications[spec.name]
+    })).filter(spec => spec.value && spec.value !== '');
+  }
+
+  private showFallbackWelcome(): void {
+    this.chatMessages.set([
+      { role: 'assistant', content: 'Hello! I\'m ready to help you manage PC components and answer questions.' }
+    ]);
+  }
+
 }

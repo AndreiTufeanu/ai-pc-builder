@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ComponentService, ComponentType, type ComponentSpec } from '../../core/services/component.service';
 import { ChatService } from '../../core/services/chat.service';
+import { Subscription } from 'rxjs';
 
 interface BuildRequirement {
   type: ComponentType;
@@ -23,57 +24,86 @@ export class UserDashboardComponent implements AfterViewChecked {
   activeTab = signal<'chat' | 'guided'>('guided');
   protected readonly Object = Object;
   @ViewChildren('messageElem') private messageElems!: QueryList<ElementRef<HTMLElement>>;
+
   // Chat functionality
-  chatMessages = signal<any[]>([
-    { role: 'assistant', content: 'Hello! I\'m here to help you build your perfect PC. Ask me anything about components, compatibility, or budget recommendations!' }
-  ]);
+  chatMessages = signal<any[]>([]);
   newMessage = '';
   isChatLoading = false;
+  private chatSubscription?: Subscription;
 
-  // Guided build functionality
+  // Guided build functionality (unchanged)
   currentStep = signal<ComponentType | 'summary'>(ComponentType.CPU);
   buildRequirements = signal<{ [key in ComponentType]?: BuildRequirement }>({});
   totalBudget = signal<number | null>(null);
-
-  // Available component types for guided mode
-  componentTypes: ComponentType[] = [
-    ComponentType.CPU,
-    ComponentType.GPU,
-    ComponentType.PSU,
-    ComponentType.RAM,
-    ComponentType.STORAGE,
-    ComponentType.MOTHERBOARD,
-    ComponentType.CASE
-  ];
-
-  // Store current requirements for two-way binding
-  currentRequirements: BuildRequirement = {
-    type: ComponentType.CPU,
-    specifications: {}
-  };
+  componentTypes: ComponentType[] = [ComponentType.CPU, ComponentType.GPU, ComponentType.PSU, ComponentType.RAM, ComponentType.STORAGE, ComponentType.MOTHERBOARD, ComponentType.CASE];
+  currentRequirements: BuildRequirement = { type: ComponentType.CPU, specifications: {} };
 
   constructor(
     private router: Router,
     public authService: AuthService,
     private componentService: ComponentService,
-    private chatService: ChatService 
+    private chatService: ChatService
   ) {
-    // Initialize empty requirements for all component types
+    this.initializeBuildRequirements();
+  }
+
+  ngOnInit(): void {
+    this.loadChatHistory();
+  }
+
+  ngOnDestroy(): void {
+    this.chatSubscription?.unsubscribe();
+  }
+
+  private initializeBuildRequirements(): void {
     const initialRequirements: { [key in ComponentType]?: BuildRequirement } = {};
     this.componentTypes.forEach(type => {
-      initialRequirements[type] = {
-        type: type,
-        specifications: {}
-      };
+      initialRequirements[type] = { type, specifications: {} };
     });
     this.buildRequirements.set(initialRequirements);
-    
-    // Initialize current requirements
     this.updateCurrentRequirements();
   }
 
+  loadChatHistory(): void {
+    const userId = this.authService.getCurrentUserId();
+    if (!userId) {
+      console.error('No user ID available');
+      this.showFallbackWelcome();
+      return;
+    }
+
+    console.log('Loading chat history for user ID:', userId);
+
+    this.chatSubscription = this.chatService.getChatHistory(userId).subscribe({
+      next: (messages) => {
+        console.log('Received messages:', messages);
+        if (messages.length === 0) {
+          this.chatMessages.set([
+            { role: 'assistant', content: 'Hello! I\'m here to help you build your perfect PC. Ask me anything about components, compatibility, or budget recommendations!' }
+          ]);
+        } else {
+          const formattedMessages = messages.flatMap(msg => [
+            { role: 'user', content: msg.userMessage },
+            { role: 'assistant', content: msg.aiResponse }
+          ]);
+          this.chatMessages.set(formattedMessages);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading chat history:', error);
+        this.showFallbackWelcome();
+      }
+    });
+  }
+
+
+
   ngAfterViewChecked(): void {
-    const last = this.messageElems && this.messageElems.length ? this.messageElems.last : null;
+    this.scrollToBottom();
+  }
+
+  private scrollToBottom(): void {
+    const last = this.messageElems?.last;
     if (last) {
       try {
         last.nativeElement.scrollIntoView({ behavior: 'instant', block: 'end' });
@@ -85,42 +115,51 @@ export class UserDashboardComponent implements AfterViewChecked {
 
   setActiveTab(tab: 'chat' | 'guided'): void {
     this.activeTab.set(tab);
+    if (tab === 'chat') {
+      this.loadChatHistory();
+    }
   }
 
   // Chat methods
   sendMessage(): void {
-      const message = this.newMessage.trim();
-      if (!message) return;
+    const message = this.newMessage.trim();
+    if (!message) return;
 
-      // Add user message to chat
-      this.chatMessages.update(messages => [
-        ...messages,
-        { role: 'user', content: message }
-      ]);
-
-      this.newMessage = '';
-      this.isChatLoading = true;
-
-      // Call the actual AI service
-      this.chatService.sendUserMessage(message).subscribe({
-        next: (response) => {
-          this.chatMessages.update(messages => [
-            ...messages,
-            { role: 'assistant', content: response.response }
-          ]);
-          this.isChatLoading = false;
-        },
-        error: (error) => {
-          console.error('Chat error:', error);
-          // Fallback response if service fails
-          this.chatMessages.update(messages => [
-            ...messages,
-            { role: 'assistant', content: 'I apologize, but I\'m having trouble connecting to the AI service right now. Please try again in a moment.' }
-          ]);
-          this.isChatLoading = false;
-        }
-      });
+    const userId = this.authService.getCurrentUserId();
+    if (!userId) {
+      console.error('No user ID available');
+      return;
     }
+
+    // Add user message immediately
+    this.chatMessages.update(messages => [
+      ...messages,
+      { role: 'user', content: message }
+    ]);
+
+    this.newMessage = '';
+    this.isChatLoading = true;
+
+    console.log('Sending message for user ID:', userId);
+
+    this.chatService.sendUserMessage(message, userId).subscribe({
+      next: (response) => {
+        this.chatMessages.update(messages => [
+          ...messages,
+          { role: 'assistant', content: response.response }
+        ]);
+        this.isChatLoading = false;
+      },
+      error: (error) => {
+        console.error('Chat error:', error);
+        this.chatMessages.update(messages => [
+          ...messages,
+          { role: 'assistant', content: 'I apologize, but I\'m having trouble connecting right now. Please try again.' }
+        ]);
+        this.isChatLoading = false;
+      }
+    });
+  }
 
   // Guided build methods
   nextStep(): void {
@@ -176,7 +215,7 @@ export class UserDashboardComponent implements AfterViewChecked {
 
   onCheckboxChange(specName: string, value: string, event: any): void {
     const checked = event.target.checked;
-    
+
     if (!this.currentRequirements.specifications[specName]) {
       this.currentRequirements.specifications[specName] = [];
     }
@@ -186,21 +225,21 @@ export class UserDashboardComponent implements AfterViewChecked {
         this.currentRequirements.specifications[specName].push(value);
       }
     } else {
-      this.currentRequirements.specifications[specName] = 
+      this.currentRequirements.specifications[specName] =
         this.currentRequirements.specifications[specName].filter((item: string) => item !== value);
     }
   }
 
   generateBuild(): void {
     this.saveCurrentRequirements();
-    
+
     // TODO: Connect to AI service to generate build based on requirements
     const requirements = this.buildRequirements();
     const budget = this.totalBudget();
-    
+
     console.log('Generating build with requirements:', requirements);
     console.log('Total budget:', budget);
-    
+
     alert('Build generation feature will be connected to the AI service. This would create a personalized PC build based on your requirements.');
   }
 
@@ -230,11 +269,17 @@ export class UserDashboardComponent implements AfterViewChecked {
         return `${key}: ${value}`;
       })
       .filter(str => str !== '');
-    
+
     return specStrings.length > 0 ? specStrings.join('; ') : 'No specific requirements';
   }
 
   logout(): void {
     this.authService.logout();
+  }
+
+  private showFallbackWelcome(): void {
+    this.chatMessages.set([
+      { role: 'assistant', content: 'Hello! I\'m here to help you build your perfect PC. Ask me anything about components, compatibility, or budget recommendations!' }
+    ]);
   }
 }

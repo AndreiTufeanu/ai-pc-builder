@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 
 export interface User {
+  id: number; // Now we'll get this from backend
   username: string;
   roles: string[];
 }
@@ -14,6 +15,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  userId: number; // Add this
   username: string;
   roles: string[];
   message: string;
@@ -40,10 +42,14 @@ export class AuthService {
   isAuthenticated = signal(false);
 
   constructor(private http: HttpClient, private router: Router) {
-    // Check if user is already logged in (from localStorage)
+    this.initializeAuth();
+  }
+
+  private initializeAuth(): void {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-      this.currentUser.set(JSON.parse(savedUser));
+      const user = JSON.parse(savedUser);
+      this.currentUser.set(user);
       this.isAuthenticated.set(true);
     }
   }
@@ -52,14 +58,18 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, credentials)
       .pipe(
         tap(response => {
-          if (response.username && response.roles) {
+          if (response.username && response.roles && response.userId) {
             const user: User = {
+              id: response.userId, // Now we get this from backend
               username: response.username,
               roles: response.roles
             };
+            
             this.currentUser.set(user);
             this.isAuthenticated.set(true);
             localStorage.setItem('currentUser', JSON.stringify(user));
+            
+            console.log('User logged in with ID:', response.userId);
           }
         })
       );
@@ -84,5 +94,11 @@ export class AuthService {
   isUser(): boolean {
     const user = this.currentUser();
     return user ? user.roles.includes('ROLE_USER') : false;
+  }
+
+  // Helper method to get current user ID
+  getCurrentUserId(): number | null {
+    const user = this.currentUser();
+    return user ? user.id : null;
   }
 }

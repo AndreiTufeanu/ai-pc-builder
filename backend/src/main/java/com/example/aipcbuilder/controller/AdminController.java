@@ -4,6 +4,7 @@ import com.example.aipcbuilder.dto.ChatRequest;
 import com.example.aipcbuilder.dto.ChatResponse;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.repository.PcComponentRepository;
+import com.example.aipcbuilder.service.ChromaDBService;
 import com.example.aipcbuilder.service.PCBuilderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,10 +20,12 @@ public class AdminController {
 
     private final PcComponentRepository componentRepository;
     private final PCBuilderService pcBuilderService;
+    private final ChromaDBService chromaDBService;
 
-    public AdminController(PcComponentRepository componentRepository, PCBuilderService pcBuilderService) {
+    public AdminController(PcComponentRepository componentRepository, PCBuilderService pcBuilderService, ChromaDBService chromaDBService) {
         this.componentRepository = componentRepository;
         this.pcBuilderService = pcBuilderService;
+        this.chromaDBService = chromaDBService;
     }
 
     /**
@@ -97,6 +100,10 @@ public class AdminController {
             // Save to database
             PcComponent savedComponent = componentRepository.save(component);
             System.out.println("Component saved with ID: " + savedComponent.getId());
+
+            // Sync to chromadb
+            chromaDBService.syncComponent(savedComponent);
+            System.out.println("Component synced to ChromaDB: " + savedComponent.getName());
 
             return ResponseEntity.ok(savedComponent);
 
@@ -173,6 +180,9 @@ public class AdminController {
             PcComponent updatedComponent = componentRepository.save(existingComponent);
             System.out.println("Component updated successfully: " + updatedComponent.getName());
 
+            chromaDBService.syncComponent(updatedComponent);
+            System.out.println("Updated component synced to ChromaDB: " + updatedComponent.getName());
+
             return ResponseEntity.ok(updatedComponent);
 
         } catch (Exception e) {
@@ -195,6 +205,9 @@ public class AdminController {
             if (!componentRepository.existsById(id)) {
                 return ResponseEntity.notFound().build();
             }
+
+            chromaDBService.deleteComponent(id);
+            System.out.println("Component deleted from ChromaDB: " + id);
 
             componentRepository.deleteById(id);
             System.out.println("Component deleted successfully");

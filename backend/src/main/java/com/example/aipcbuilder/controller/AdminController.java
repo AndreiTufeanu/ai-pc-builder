@@ -4,6 +4,7 @@ import com.example.aipcbuilder.dto.ChatRequest;
 import com.example.aipcbuilder.dto.ChatResponse;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.repository.PcComponentRepository;
+import com.example.aipcbuilder.service.PCBuilderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +18,11 @@ import java.util.Optional;
 public class AdminController {
 
     private final PcComponentRepository componentRepository;
+    private final PCBuilderService pcBuilderService;
 
-    public AdminController(PcComponentRepository componentRepository) {
+    public AdminController(PcComponentRepository componentRepository, PCBuilderService pcBuilderService) {
         this.componentRepository = componentRepository;
+        this.pcBuilderService = pcBuilderService;
     }
 
     /**
@@ -227,9 +230,7 @@ public class AdminController {
     public ResponseEntity<ChatResponse> adminChat(@RequestBody ChatRequest request) {
         System.out.println("Admin training chat message: " + request.getMessage());
         System.out.println("User ID: " + request.getUserId());
-
-        String response = "Thank you for the training information! This will be added to the knowledge base. ";
-        response += "When this is connected to ChromaDB, your input about PC components will help improve recommendations for all users.";
+        String response = pcBuilderService.getAdminTrainingResponse(request.getMessage(), request.getUserId());
 
         ChatResponse chatResponse = new ChatResponse(response);
         return ResponseEntity.ok(chatResponse);

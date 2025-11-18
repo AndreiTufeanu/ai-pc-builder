@@ -1,5 +1,6 @@
 package com.example.aipcbuilder.service;
 
+import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.model.PcComponent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ChromaDBService {
@@ -175,6 +177,100 @@ public class ChromaDBService {
             return response.getStatusCode() == HttpStatus.OK ? "CONNECTED" : "ERROR";
         } catch (Exception e) {
             return "DISCONNECTED";
+        }
+    }
+
+    // User messages methods
+    public void syncUserMessages(List<ChatMessage> messages) {
+        try {
+            List<Map<String, Object>> messageData = new ArrayList<>();
+            for (ChatMessage message : messages) {
+                messageData.add(createUserMessageData(message));
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<List<Map<String, Object>>> request =
+                    new HttpEntity<>(messageData, headers);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    chromaDbServerUrl + "/user_messages/upsert",
+                    request,
+                    String.class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                System.out.println("✓ Synced " + messages.size() + " user messages to ChromaDB");
+            } else {
+                System.err.println("✗ Failed to sync user messages: " + response.getBody());
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Error syncing user messages to ChromaDB: " + e.getMessage());
+        }
+    }
+
+    public void syncLatestUserMessages(Long userId, List<ChatMessage> messages) {
+        // Only sync the last 50 messages for this user
+        List<ChatMessage> latestMessages = messages.stream()
+                .sorted((m1, m2) -> m1.getCreatedAt().compareTo(m2.getCreatedAt())) // newest first
+                .limit(50)
+                .collect(Collectors.toList());
+
+        syncUserMessages(latestMessages);
+    }
+
+    private Map<String, Object> createUserMessageData(ChatMessage message) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", message.getId().toString());
+        data.put("user_id", message.getUserId().toString());
+        data.put("user_message", message.getUserMessage());
+        data.put("ai_response", message.getAiResponse());
+        data.put("created_at", message.getCreatedAt().toString());
+        return data;
+    }
+
+    // Search user messages for context
+    public List<Map<String, Object>> searchUserMessages(String query, int nResults) {
+        return searchCollection("user_messages", query, nResults);
+    }
+
+    public List<Map<String, Object>> searchUserMessagesByUser(String query, Long userId, int nResults) {
+        try {
+            // First search in user_messages collection
+            List<Map<String, Object>> results = searchUserMessages(query, nResults * 2); // Get more to filter
+
+            // Filter by user_id
+            return results.stream()
+                    .filter(result -> {
+                        Map<String, Object> metadata = (Map<String, Object>) result.get("metadata");
+                        String resultUserId = (String) metadata.get("user_id");
+                        return userId.toString().equals(resultUserId);
+                    })
+                    .limit(nResults)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Error searching user messages by user: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    // Startup cleanup
+    public void performStartupCleanup() {
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    chromaDbServerUrl + "/cleanup/startup",
+                    null,
+                    String.class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                System.out.println("✓ ChromaDB startup cleanup completed");
+            } else {
+                System.err.println("✗ ChromaDB startup cleanup failed: " + response.getBody());
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Error during ChromaDB startup cleanup: " + e.getMessage());
         }
     }
 }

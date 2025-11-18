@@ -29,6 +29,6 @@ public class ChatMessageService {
      * Get user's chat history
      */
     public List<ChatMessage> getUserChatHistory(Long userId) {
-        return chatMessageRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        return chatMessageRepository.findByUserIdOrderByCreatedAt(userId);
     }
 }

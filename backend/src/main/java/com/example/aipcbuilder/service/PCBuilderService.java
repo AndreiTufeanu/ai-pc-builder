@@ -19,33 +19,49 @@ public class PCBuilderService {
         this.chromaDBService = chromaDBService;
     }
 
-    public String getChatResponse(String userMessage) {
-        // Search for relevant components and knowledge
+    public String getChatResponse(String userMessage, Long userId) {
+        System.out.println("=== User Chat Request ===");
+        System.out.println("Message: " + userMessage);
+        System.out.println("User ID: " + userId);
+
+        // Search for relevant components, knowledge, and user context
         List<Map<String, Object>> componentResults = chromaDBService.searchComponents(userMessage, 3);
         List<Map<String, Object>> knowledgeResults = chromaDBService.searchAdminKnowledge(userMessage, 2);
+        List<Map<String, Object>> userContextResults = chromaDBService.searchUserMessagesByUser(userMessage, userId, 3);
 
-        String context = buildContext(componentResults, knowledgeResults);
+        System.out.println("Found " + componentResults.size() + " relevant components");
+        System.out.println("Found " + knowledgeResults.size() + " relevant knowledge items");
+        System.out.println("Found " + userContextResults.size() + " relevant user context items");
+
+        String context = buildContext(componentResults, knowledgeResults, userContextResults, userId);
+        System.out.println("Context built: " + (context.length() > 0));
 
         String systemPrompt = """
-            You are an expert PC building assistant. Help users choose compatible PC components.
-            When suggesting parts, be specific about compatibility requirements.
-            Keep responses concise and helpful.
-            
-            Available Components and Knowledge:
-            %s
-            
-            Instructions:
-            - Use the component information above when relevant
-            - Consider compatibility between components
-            - Suggest specific components when appropriate
-            - If you don't have information, say so
-            """.formatted(context);
+        You are an expert PC building assistant. Help users choose compatible PC components.
+        When suggesting parts, be specific about compatibility requirements.
+        Keep responses concise and helpful.
+        
+        Available Components, Knowledge, and Conversation Context:
+        %s
+        
+        Instructions:
+        - Use the component information above when relevant
+        - Consider compatibility between components
+        - Suggest specific components when appropriate
+        - Reference previous conversation context when relevant
+        - If you don't have information, say so
+        """.formatted(context);
 
-        return chatClient.prompt()
+        System.out.println("Sending request to AI model...");
+
+        String response = chatClient.prompt()
                 .system(systemPrompt)
                 .user(userMessage)
                 .call()
                 .content();
+
+        System.out.println("AI Response generated");
+        return response;
     }
 
     public String getAdminTrainingResponse(String userMessage, Long userId) {
@@ -81,7 +97,9 @@ public class PCBuilderService {
     }
 
     private String buildContext(List<Map<String, Object>> componentResults,
-                                List<Map<String, Object>> knowledgeResults) {
+                                List<Map<String, Object>> knowledgeResults,
+                                List<Map<String, Object>> userContextResults,
+                                Long userId) {
         StringBuilder context = new StringBuilder();
 
         if (!componentResults.isEmpty()) {
@@ -94,6 +112,18 @@ public class PCBuilderService {
             for (Map<String, Object> result : knowledgeResults) {
                 String doc = (String) result.get("document");
                 context.append("- ").append(doc).append("\n");
+            }
+        }
+
+        if (!userContextResults.isEmpty()) {
+            context.append("\n=== PREVIOUS CONVERSATION ===\n");
+            for (Map<String, Object> result : userContextResults) {
+                String doc = (String) result.get("document");
+                // Extract just the first few lines for brevity
+                String preview = doc.lines()
+                        .limit(3)
+                        .collect(Collectors.joining("\n"));
+                context.append("- ").append(preview).append("\n");
             }
         }
 

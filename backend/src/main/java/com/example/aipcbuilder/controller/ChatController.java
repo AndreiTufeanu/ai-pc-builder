@@ -4,6 +4,7 @@ import com.example.aipcbuilder.dto.ChatRequest;
 import com.example.aipcbuilder.dto.ChatResponse;
 import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.service.ChatMessageService;
+import com.example.aipcbuilder.service.ChromaDBService;
 import com.example.aipcbuilder.service.PCBuilderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +18,12 @@ public class ChatController {
 
     private final PCBuilderService pcBuilderService;
     private final ChatMessageService chatMessageService;
+    private final ChromaDBService chromaDBService;
 
-    public ChatController(PCBuilderService pcBuilderService, ChatMessageService chatMessageService) {
+    public ChatController(PCBuilderService pcBuilderService, ChatMessageService chatMessageService, ChromaDBService chromaDBService) {
         this.pcBuilderService = pcBuilderService;
         this.chatMessageService = chatMessageService;
+        this.chromaDBService = chromaDBService;
     }
 
     @PostMapping
@@ -29,7 +32,7 @@ public class ChatController {
         System.out.println("Message: " + request.getMessage());
 
         // Get AI response first
-        String aiResponse = pcBuilderService.getChatResponse(request.getMessage());
+        String aiResponse = pcBuilderService.getChatResponse(request.getMessage(), request.getUserId());
 
         // Save both user message and AI response to database
         ChatMessage savedMessage = chatMessageService.saveChatMessage(
@@ -39,6 +42,10 @@ public class ChatController {
         );
 
         System.out.println("Chat message saved with ID: " + savedMessage.getId());
+
+        // Sync the latest messages for this user to ChromaDB (will automatically limit to 50)
+        List<ChatMessage> userMessages = chatMessageService.getUserChatHistory(request.getUserId());
+        chromaDBService.syncLatestUserMessages(request.getUserId(), userMessages);
 
         return new ChatResponse(aiResponse, savedMessage.getId());
     }

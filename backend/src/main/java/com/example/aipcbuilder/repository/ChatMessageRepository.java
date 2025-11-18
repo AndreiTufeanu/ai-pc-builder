@@ -11,4 +11,8 @@ import java.util.List;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
     List<ChatMessage> findByUserIdOrderByCreatedAtDesc(Long userId);
+    List<ChatMessage> findByUserIdOrderByCreatedAt(Long userId);
+
+    @Query("SELECT DISTINCT cm.userId FROM ChatMessage cm")
+    List<Long> findDistinctUserIds();
 }

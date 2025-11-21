@@ -64,10 +64,9 @@ public class PCBuilderService {
         return response;
     }
 
-    public String getAdminTrainingResponse(String userMessage, Long userId) {
+    public String getAdminTrainingResponse(String userMessage) {
         // Add admin message to knowledge base
         Map<String, Object> metadata = Map.of(
-                "user_id", userId.toString(),
                 "timestamp", java.time.Instant.now().toString(),
                 "source", "admin_training"
         );

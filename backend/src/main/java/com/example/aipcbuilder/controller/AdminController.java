@@ -252,7 +252,7 @@ public class AdminController {
         System.out.println("Message: " + request.getMessage());
 
         // Get AI training response (this also stores in ChromaDB)
-        String response = pcBuilderService.getAdminTrainingResponse(request.getMessage(), request.getUserId());
+        String response = pcBuilderService.getAdminTrainingResponse(request.getMessage());
 
         // Save both admin message and AI response to database
         ChatMessage savedMessage = chatMessageService.saveChatMessage(

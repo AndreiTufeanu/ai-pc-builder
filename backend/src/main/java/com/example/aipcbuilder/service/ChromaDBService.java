@@ -2,7 +2,6 @@ package com.example.aipcbuilder.service;
 
 import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.model.PcComponent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -17,35 +16,13 @@ public class ChromaDBService {
     @Value("${chromadb.server.url:http://localhost:8000}")
     private String chromaDbServerUrl;
 
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
-
-    public ChromaDBService() {
-        this.restTemplate = new RestTemplate();
-        this.objectMapper = new ObjectMapper();
-    }
+    private final RestTemplate restTemplate = new RestTemplate();
 
     // Component data methods
     public void syncComponent(PcComponent component) {
         try {
             Map<String, Object> componentData = createComponentData(component);
-            List<Map<String, Object>> componentsList = Collections.singletonList(componentData);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<List<Map<String, Object>>> request =
-                    new HttpEntity<>(componentsList, headers);
-
-            ResponseEntity<String> response = restTemplate.postForEntity(
-                    chromaDbServerUrl + "/components/upsert",
-                    request,
-                    String.class
-            );
-
-            if (response.getStatusCode() != HttpStatus.OK) {
-                System.err.println("Failed to sync component to ChromaDB: " + response.getBody());
-            }
+            syncComponents(Collections.singletonList(componentData));
         } catch (Exception e) {
             System.err.println("Error syncing component to ChromaDB: " + e.getMessage());
         }
@@ -53,32 +30,29 @@ public class ChromaDBService {
 
     public void syncAllComponents(List<PcComponent> components) {
         try {
-            List<Map<String, Object>> componentsData = new ArrayList<>();
-            for (PcComponent component : components) {
-                componentsData.add(createComponentData(component));
-            }
+            List<Map<String, Object>> componentsData = components.stream()
+                    .map(this::createComponentData)
+                    .collect(Collectors.toList());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<List<Map<String, Object>>> request =
-                    new HttpEntity<>(componentsData, headers);
-
-            ResponseEntity<String> response = restTemplate.postForEntity(
-                    chromaDbServerUrl + "/components/upsert",
-                    request,
-                    String.class
-            );
-
-            if (response.getStatusCode() == HttpStatus.OK) {
-                System.out.println("✓ Synced " + components.size() + " components to ChromaDB");
-            } else {
-                System.err.println("✗ Failed to sync components: " + response.getBody());
-            }
-
+            syncComponents(componentsData);
         } catch (Exception e) {
-            System.err.println("✗ Error syncing all components to ChromaDB: " + e.getMessage());
-            e.printStackTrace(); // Add stack trace for debugging
+            System.err.println("Error syncing all components to ChromaDB: " + e.getMessage());
+        }
+    }
+
+    private void syncComponents(List<Map<String, Object>> componentsData) {
+        HttpEntity<List<Map<String, Object>>> request = createRequest(componentsData);
+
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                chromaDbServerUrl + "/components/upsert",
+                request,
+                String.class
+        );
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            System.out.println("✓ Synced " + componentsData.size() + " components to ChromaDB");
+        } else {
+            System.err.println("✗ Failed to sync components: " + response.getBody());
         }
     }
 
@@ -111,11 +85,7 @@ public class ChromaDBService {
             knowledgeData.put("knowledge_type", knowledgeType);
             knowledgeData.put("metadata", metadata != null ? metadata : new HashMap<>());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<Map<String, Object>> request =
-                    new HttpEntity<>(knowledgeData, headers);
+            HttpEntity<Map<String, Object>> request = createRequest(knowledgeData);
 
             ResponseEntity<String> response = restTemplate.postForEntity(
                     chromaDbServerUrl + "/admin/knowledge",
@@ -140,18 +110,19 @@ public class ChromaDBService {
         return searchCollection("admin_knowledge", query, nResults);
     }
 
+    public List<Map<String, Object>> searchUserMessages(String query, int nResults) {
+        return searchCollection("user_messages", query, nResults);
+    }
+
     private List<Map<String, Object>> searchCollection(String collection, String query, int nResults) {
         try {
-            Map<String, Object> searchRequest = new HashMap<>();
-            searchRequest.put("query", query);
-            searchRequest.put("collection", collection);
-            searchRequest.put("n_results", nResults);
+            Map<String, Object> searchRequest = Map.of(
+                    "query", query,
+                    "collection", collection,
+                    "n_results", nResults
+            );
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<Map<String, Object>> request =
-                    new HttpEntity<>(searchRequest, headers);
+            HttpEntity<Map<String, Object>> request = createRequest(searchRequest);
 
             ResponseEntity<Map> response = restTemplate.postForEntity(
                     chromaDbServerUrl + "/search",
@@ -168,31 +139,32 @@ public class ChromaDBService {
         return new ArrayList<>();
     }
 
-    public String getChromaDbStatus() {
+    public List<Map<String, Object>> searchUserMessagesByUser(String query, Long userId, int nResults) {
         try {
-            ResponseEntity<String> response = restTemplate.getForEntity(
-                    chromaDbServerUrl,
-                    String.class
-            );
-            return response.getStatusCode() == HttpStatus.OK ? "CONNECTED" : "ERROR";
+            List<Map<String, Object>> results = searchUserMessages(query, nResults * 2);
+
+            return results.stream()
+                    .filter(result -> {
+                        Map<String, Object> metadata = (Map<String, Object>) result.get("metadata");
+                        String resultUserId = (String) metadata.get("user_id");
+                        return userId.toString().equals(resultUserId);
+                    })
+                    .limit(nResults)
+                    .collect(Collectors.toList());
         } catch (Exception e) {
-            return "DISCONNECTED";
+            System.err.println("Error searching user messages by user: " + e.getMessage());
+            return new ArrayList<>();
         }
     }
 
     // User messages methods
     public void syncUserMessages(List<ChatMessage> messages) {
         try {
-            List<Map<String, Object>> messageData = new ArrayList<>();
-            for (ChatMessage message : messages) {
-                messageData.add(createUserMessageData(message));
-            }
+            List<Map<String, Object>> messageData = messages.stream()
+                    .map(this::createUserMessageData)
+                    .collect(Collectors.toList());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<List<Map<String, Object>>> request =
-                    new HttpEntity<>(messageData, headers);
+            HttpEntity<List<Map<String, Object>>> request = createRequest(messageData);
 
             ResponseEntity<String> response = restTemplate.postForEntity(
                     chromaDbServerUrl + "/user_messages/upsert",
@@ -202,18 +174,15 @@ public class ChromaDBService {
 
             if (response.getStatusCode() == HttpStatus.OK) {
                 System.out.println("✓ Synced " + messages.size() + " user messages to ChromaDB");
-            } else {
-                System.err.println("✗ Failed to sync user messages: " + response.getBody());
             }
         } catch (Exception e) {
-            System.err.println("✗ Error syncing user messages to ChromaDB: " + e.getMessage());
+            System.err.println("Error syncing user messages to ChromaDB: " + e.getMessage());
         }
     }
 
     public void syncLatestUserMessages(Long userId, List<ChatMessage> messages) {
-        // Only sync the last 50 messages for this user
         List<ChatMessage> latestMessages = messages.stream()
-                .sorted((m1, m2) -> m1.getCreatedAt().compareTo(m2.getCreatedAt())) // newest first
+                .sorted((m1, m2) -> m2.getCreatedAt().compareTo(m1.getCreatedAt())) // Fixed: newest first
                 .limit(50)
                 .collect(Collectors.toList());
 
@@ -230,31 +199,6 @@ public class ChromaDBService {
         return data;
     }
 
-    // Search user messages for context
-    public List<Map<String, Object>> searchUserMessages(String query, int nResults) {
-        return searchCollection("user_messages", query, nResults);
-    }
-
-    public List<Map<String, Object>> searchUserMessagesByUser(String query, Long userId, int nResults) {
-        try {
-            // First search in user_messages collection
-            List<Map<String, Object>> results = searchUserMessages(query, nResults * 2); // Get more to filter
-
-            // Filter by user_id
-            return results.stream()
-                    .filter(result -> {
-                        Map<String, Object> metadata = (Map<String, Object>) result.get("metadata");
-                        String resultUserId = (String) metadata.get("user_id");
-                        return userId.toString().equals(resultUserId);
-                    })
-                    .limit(nResults)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            System.err.println("Error searching user messages by user: " + e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
     // Startup cleanup
     public void performStartupCleanup() {
         try {
@@ -266,11 +210,25 @@ public class ChromaDBService {
 
             if (response.getStatusCode() == HttpStatus.OK) {
                 System.out.println("✓ ChromaDB startup cleanup completed");
-            } else {
-                System.err.println("✗ ChromaDB startup cleanup failed: " + response.getBody());
             }
         } catch (Exception e) {
-            System.err.println("✗ Error during ChromaDB startup cleanup: " + e.getMessage());
+            System.err.println("Error during ChromaDB startup cleanup: " + e.getMessage());
         }
+    }
+
+    public String getChromaDbStatus() {
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(chromaDbServerUrl, String.class);
+            return response.getStatusCode() == HttpStatus.OK ? "CONNECTED" : "ERROR";
+        } catch (Exception e) {
+            return "DISCONNECTED";
+        }
+    }
+
+    // Helper method to create HTTP requests
+    private <T> HttpEntity<T> createRequest(T body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(body, headers);
     }
 }

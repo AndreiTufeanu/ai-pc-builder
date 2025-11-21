@@ -24,7 +24,7 @@ public class PCBuilderService {
         System.out.println("Message: " + userMessage);
         System.out.println("User ID: " + userId);
 
-        // Search for relevant components, knowledge, and user context
+        // Search for relevant context
         List<Map<String, Object>> componentResults = chromaDBService.searchComponents(userMessage, 3);
         List<Map<String, Object>> knowledgeResults = chromaDBService.searchAdminKnowledge(userMessage, 2);
         List<Map<String, Object>> userContextResults = chromaDBService.searchUserMessagesByUser(userMessage, userId, 3);
@@ -33,7 +33,7 @@ public class PCBuilderService {
         System.out.println("Found " + knowledgeResults.size() + " relevant knowledge items");
         System.out.println("Found " + userContextResults.size() + " relevant user context items");
 
-        String context = buildContext(componentResults, knowledgeResults, userContextResults, userId);
+        String context = buildContext(componentResults, knowledgeResults, userContextResults);
         System.out.println("Context built: " + (context.length() > 0));
 
         String systemPrompt = """
@@ -52,20 +52,15 @@ public class PCBuilderService {
         - If you don't have information, say so
         """.formatted(context);
 
-        System.out.println("Sending request to AI model...");
-
-        String response = chatClient.prompt()
+        return chatClient.prompt()
                 .system(systemPrompt)
                 .user(userMessage)
                 .call()
                 .content();
-
-        System.out.println("AI Response generated");
-        return response;
     }
 
     public String getAdminTrainingResponse(String userMessage) {
-        // Add admin message to knowledge base
+        // Add admin message to knowledge base (no user ID)
         Map<String, Object> metadata = Map.of(
                 "timestamp", java.time.Instant.now().toString(),
                 "source", "admin_training"
@@ -73,9 +68,8 @@ public class PCBuilderService {
 
         chromaDBService.addAdminKnowledge(userMessage, "TRAINING", metadata);
 
-        // Also search for relevant context
+        // Search for relevant components to provide context
         List<Map<String, Object>> componentResults = chromaDBService.searchComponents(userMessage, 2);
-
         String context = componentResults.isEmpty() ? "" :
                 "\nRelevant Components:\n" + buildComponentContext(componentResults);
 
@@ -97,8 +91,7 @@ public class PCBuilderService {
 
     private String buildContext(List<Map<String, Object>> componentResults,
                                 List<Map<String, Object>> knowledgeResults,
-                                List<Map<String, Object>> userContextResults,
-                                Long userId) {
+                                List<Map<String, Object>> userContextResults) {
         StringBuilder context = new StringBuilder();
 
         if (!componentResults.isEmpty()) {
@@ -118,10 +111,8 @@ public class PCBuilderService {
             context.append("\n=== PREVIOUS CONVERSATION ===\n");
             for (Map<String, Object> result : userContextResults) {
                 String doc = (String) result.get("document");
-                // Extract just the first few lines for brevity
-                String preview = doc.lines()
-                        .limit(3)
-                        .collect(Collectors.joining("\n"));
+                // Extract first 3 lines for brevity
+                String preview = doc.lines().limit(3).collect(Collectors.joining("\n"));
                 context.append("- ").append(preview).append("\n");
             }
         }
@@ -129,15 +120,17 @@ public class PCBuilderService {
         return context.toString();
     }
 
+    /**
+     * Builds component context by limiting each component to first 4 lines
+     * This prevents the AI prompt from getting too long while keeping essential info:
+     * - Component name, type, manufacturer, model, and key details
+     */
     private String buildComponentContext(List<Map<String, Object>> componentResults) {
         return componentResults.stream()
                 .map(result -> {
-                    Map<String, Object> metadata = (Map<String, Object>) result.get("metadata");
                     String doc = (String) result.get("document");
-                    // Extract the first few lines for brevity
-                    return doc.lines()
-                            .limit(4)
-                            .collect(Collectors.joining("\n"));
+                    // Limit to first 4 lines to keep context concise
+                    return doc.lines().limit(4).collect(Collectors.joining("\n"));
                 })
                 .collect(Collectors.joining("\n---\n"));
     }

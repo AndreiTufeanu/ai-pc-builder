@@ -13,6 +13,37 @@ export interface PcComponent {
   specifications: { [key: string]: any };
 }
 
+export interface BuildResponse {
+  build: Build;
+  message: string;
+  success: boolean;
+}
+
+export interface BuildRequest {
+  userId: number;
+  name: string;
+  description: string;
+  budget: number | null;
+  requirements: { [key in ComponentType]?: { specifications: { [key: string]: any } } };
+}
+
+export interface Build {
+  id: number;
+  userId: number;
+  name: string;
+  description: string;
+  totalPrice: number | null;
+  budget: number | null;
+  createdAt: string;
+  cpuId: number | null;
+  gpuId: number | null;
+  psuId: number | null;
+  ramId: number | null;
+  storageId: number | null;
+  motherboardId: number | null;
+  caseId: number | null;
+}
+
 export enum ComponentType {
   CPU = 'CPU',
   GPU = 'GPU',
@@ -67,7 +98,8 @@ export class ComponentService {
       { name: 'efficiency', label: 'Efficiency Rating', type: 'select', options: ['80+ Bronze', '80+ Gold', '80+ Platinum', '80+ Titanium'], required: true },
       { name: 'formFactor', label: 'Form Factor', type: 'select', options: ['ATX', 'SFX', 'SFX-L'], required: true },
       { name: 'modular', label: 'Modular', type: 'select', options: ['Non-modular', 'Semi-modular', 'Full modular'], required: true },
-      { name: 'connectors', label: 'Available Connectors', type: 'checkbox-group', options: [
+      {
+        name: 'connectors', label: 'Available Connectors', type: 'checkbox-group', options: [
           '24-pin ATX',
           '8-pin EPS (CPU)',
           '4+4 pin EPS (CPU)',
@@ -77,7 +109,8 @@ export class ComponentService {
           'SATA',
           'Molex',
           'Floppy'
-      ]}
+        ]
+      }
     ],
     RAM: [
       { name: 'capacity', label: 'Capacity (GB)', type: 'number', required: true },
@@ -102,7 +135,8 @@ export class ComponentService {
       { name: 'maxMemory', label: 'Max Memory (GB)', type: 'number', required: true },
       { name: 'memorySpeed', label: 'Memory Speed (MHz)', type: 'number' },
       { name: 'chipset', label: 'Chipset', type: 'text', required: true },
-      { name: 'features', label: 'Features & Ports', type: 'checkbox-group', options: [
+      {
+        name: 'features', label: 'Features & Ports', type: 'checkbox-group', options: [
           'Wi-Fi',
           'Bluetooth',
           '2.5G Ethernet',
@@ -113,7 +147,8 @@ export class ComponentService {
           'Thunderbolt',
           'DisplayPort',
           'HDMI'
-      ]}
+        ]
+      }
     ],
     CASE: [
       { name: 'formFactor', label: 'Supported Form Factors', type: 'select', options: ['ATX', 'mATX', 'ITX', 'E-ATX'], required: true },
@@ -123,7 +158,7 @@ export class ComponentService {
     ]
   };
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getAllComponents(): Observable<PcComponent[]> {
     return this.http.get<PcComponent[]>(this.baseUrl);
@@ -147,5 +182,21 @@ export class ComponentService {
 
   getSpecsForType(type: ComponentType): ComponentSpec[] {
     return this.componentSpecs[type] || [];
+  }
+
+  generateBuild(buildRequest: BuildRequest): Observable<BuildResponse> {
+    return this.http.post<BuildResponse>(`http://localhost:8080/api/build/generate`, buildRequest);
+  }
+
+  createBuild(buildRequest: BuildRequest): Observable<BuildResponse> {
+    return this.http.post<BuildResponse>(`http://localhost:8080/api/build`, buildRequest);
+  }
+
+  getUserBuilds(userId: number): Observable<Build[]> {
+    return this.http.get<Build[]>(`http://localhost:8080/api/build/user/${userId}`);
+  }
+
+  deleteBuild(userId: number, buildId: number): Observable<void> {
+    return this.http.delete<void>(`http://localhost:8080/api/build/${buildId}/user/${userId}`);
   }
 }

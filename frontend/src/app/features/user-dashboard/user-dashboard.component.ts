@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { ComponentService, ComponentType, type ComponentSpec } from '../../core/services/component.service';
+import { Build, BuildRequest, ComponentService, ComponentType, PcComponent, type ComponentSpec } from '../../core/services/component.service';
 import { ChatService } from '../../core/services/chat.service';
 import { Subscription } from 'rxjs';
 
@@ -21,7 +21,8 @@ interface BuildRequirement {
   styleUrls: ['./user-dashboard.component.css']
 })
 export class UserDashboardComponent implements AfterViewChecked {
-  activeTab = signal<'chat' | 'guided'>('guided');
+  userBuilds = signal<Build[]>([]);
+  activeTab = signal<'guided' | 'chat' | 'builds'>('guided');
   protected readonly Object = Object;
   @ViewChildren('messageElem') private messageElems!: QueryList<ElementRef<HTMLElement>>;
 
@@ -30,6 +31,12 @@ export class UserDashboardComponent implements AfterViewChecked {
   newMessage = '';
   isChatLoading = false;
   private chatSubscription?: Subscription;
+
+  generatedBuild = signal<PcComponent[] | null>(null);
+  isGeneratingBuild = signal(false);
+  buildName = signal('My PC Build');
+  buildDescription = signal('');
+  buildMessage = signal('');
 
   // Guided build functionality (unchanged)
   currentStep = signal<ComponentType | 'summary'>(ComponentType.CPU);
@@ -113,7 +120,7 @@ export class UserDashboardComponent implements AfterViewChecked {
     }
   }
 
-  setActiveTab(tab: 'chat' | 'guided'): void {
+  setActiveTab(tab: 'chat' | 'guided' | 'builds'): void {
     this.activeTab.set(tab);
     if (tab === 'chat') {
       this.loadChatHistory();
@@ -233,14 +240,84 @@ export class UserDashboardComponent implements AfterViewChecked {
   generateBuild(): void {
     this.saveCurrentRequirements();
 
-    // TODO: Connect to AI service to generate build based on requirements
-    const requirements = this.buildRequirements();
+    const userId = this.authService.getCurrentUserId();
+    if (!userId) {
+      alert('Please log in to generate builds');
+      return;
+    }
+
     const budget = this.totalBudget();
+    const requirements = this.buildRequirements();
 
-    console.log('Generating build with requirements:', requirements);
-    console.log('Total budget:', budget);
+    // Validate build name
+    if (!this.buildName().trim()) {
+      alert('Please enter a build name');
+      return;
+    }
 
-    alert('Build generation feature will be connected to the AI service. This would create a personalized PC build based on your requirements.');
+    this.isGeneratingBuild.set(true);
+
+    const buildRequest: BuildRequest = {
+      userId: userId,
+      name: this.buildName(),
+      description: this.buildDescription(),
+      budget: budget,
+      requirements: requirements
+    };
+
+    this.componentService.generateBuild(buildRequest).subscribe({
+      next: (response) => {
+        this.isGeneratingBuild.set(false);
+        if (response.success) {
+          console.log('Build generated successfully:', response.build);
+          // Navigate to builds page
+          this.activeTab.set('builds');
+          this.loadUserBuilds();
+          // Reset guided build form
+          this.clearRequirements();
+          this.buildName.set('My PC Build');
+          this.buildDescription.set('');
+        } else {
+          alert('Error: ' + response.message);
+        }
+      },
+      error: (error) => {
+        this.isGeneratingBuild.set(false);
+        console.error('Error generating build:', error);
+        alert('Failed to generate build. Please try again.');
+      }
+    });
+  }
+
+  loadUserBuilds(): void {
+    const userId = this.authService.getCurrentUserId();
+    if (!userId) return;
+
+    this.componentService.getUserBuilds(userId).subscribe({
+      next: (builds) => {
+        this.userBuilds.set(builds);
+      },
+      error: (error) => {
+        console.error('Error loading builds:', error);
+      }
+    });
+  }
+
+  deleteBuild(build: Build): void {
+    const userId = this.authService.getCurrentUserId();
+    if (!userId) return;
+
+    if (confirm(`Are you sure you want to delete this build?`)) {
+      this.componentService.deleteBuild(userId, build.id).subscribe({
+        next: () => {
+          this.loadUserBuilds(); // Reload the list
+        },
+        error: (error) => {
+          console.error('Error deleting build:', error);
+          alert('Failed to delete build.');
+        }
+      });
+    }
   }
 
   clearRequirements(): void {
@@ -281,5 +358,32 @@ export class UserDashboardComponent implements AfterViewChecked {
     this.chatMessages.set([
       { role: 'assistant', content: 'Hello! I\'m here to help you build your perfect PC. Ask me anything about components, compatibility, or budget recommendations!' }
     ]);
+  }
+
+  goBackToGuidedBuild(): void {
+    this.generatedBuild.set(null);
+    this.buildMessage.set('');
+  }
+
+  addBuildToList(): void {
+    const build = this.generatedBuild();
+    if (build) {
+      console.log('Adding build to list:', build);
+      // TODO: Implement actual save functionality later
+      alert('Build saved to your list! (This will be implemented later)');
+    }
+  }
+
+  getImportantSpecs(component: PcComponent): { key: string; label: string; value: any }[] {
+    const specs = this.componentService.getSpecsForType(component.type);
+    const importantSpecs = specs.filter(spec =>
+      ['socket', 'memory', 'wattage', 'capacity', 'formFactor', 'cores', 'speed'].includes(spec.name)
+    );
+
+    return importantSpecs.map(spec => ({
+      key: spec.name,
+      label: spec.label,
+      value: component.specifications[spec.name]
+    })).filter(spec => spec.value && spec.value !== '');
   }
 }

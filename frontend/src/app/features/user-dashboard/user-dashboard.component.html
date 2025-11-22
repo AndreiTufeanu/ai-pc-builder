@@ -10,224 +10,279 @@
 
   <!-- Tab Navigation -->
   <nav class="tab-nav">
-    <button 
-      class="tab-button" 
-      [class.active]="activeTab() === 'guided'"
-      (click)="setActiveTab('guided')">
+    <button class="tab-button" [class.active]="activeTab() === 'guided'" (click)="setActiveTab('guided')">
       🛠️ Guided Build
     </button>
-    <button 
-      class="tab-button" 
-      [class.active]="activeTab() === 'chat'"
-      (click)="setActiveTab('chat')">
+    <button class="tab-button" [class.active]="activeTab() === 'chat'" (click)="setActiveTab('chat')">
       💬 AI Chat
+    </button>
+    <button class="tab-button" [class.active]="activeTab() === 'builds'"
+      (click)="setActiveTab('builds'); loadUserBuilds()">
+      📋 My Builds
     </button>
   </nav>
 
   <!-- Guided Build Tab -->
   @if (activeTab() === 'guided') {
-    <div class="tab-content">
-      <div class="guided-build">
-        <!-- Budget Section -->
-        <div class="budget-section">
-          <h3>Total Budget</h3>
-          <div class="budget-input">
-            <label class="form-label">What's your total budget? (Optional)</label>
-            <div class="input-with-symbol">
-              <span class="currency-symbol">$</span>
-              <input
-                type="number"
-                class="form-input"
-                [value]="totalBudget()"
-                (input)="totalBudget.set($event.target.value ? +$event.target.value : null)"
-                placeholder="Enter your budget">
-            </div>
-            <small class="form-hint">This helps me recommend components that fit your budget</small>
+  <div class="tab-content">
+    <div class="guided-build">
+      <!-- Budget Section -->
+      <div class="budget-section">
+        <h3>Total Budget</h3>
+        <div class="budget-input">
+          <label class="form-label">What's your total budget? (Optional)</label>
+          <div class="input-with-symbol">
+            <span class="currency-symbol">$</span>
+            <input type="number" class="form-input" [value]="totalBudget()"
+              (input)="totalBudget.set($any($event.target).value ? +$any($event.target).value : null)"
+              placeholder="Enter your budget">
           </div>
-        </div>
-
-        <!-- Step Navigation -->
-        <div class="step-navigation">
-          @for (step of componentTypes; track step) {
-            <button
-              class="step-button"
-              [class.active]="currentStep() === step"
-              [class.completed]="buildRequirements()[step]?.specifications && Object.keys(buildRequirements()[step]!.specifications).length > 0"
-              (click)="goToStep(step)">
-              {{ step }}
-            </button>
-          }
-          <button
-            class="step-button summary"
-            [class.active]="currentStep() === 'summary'"
-            (click)="goToStep('summary')">
-            📋 Summary
-          </button>
-        </div>
-
-        <!-- Step Content -->
-        <div class="step-content">
-          @if (currentStep() !== 'summary') {
-            <div class="component-step">
-              <h3>{{ currentStep() }} Requirements</h3>
-              <p class="step-description">Tell me what you're looking for in a {{ currentStep() }}. All fields are optional.</p>
-
-              <!-- Specifications -->
-              <div class="specifications-form">
-                @for (spec of getSpecsForCurrentType(); track spec.name) {
-                  <div class="form-group">
-                    <label class="form-label">{{ spec.label }}</label>
-                    
-                    @switch (spec.type) {
-                      @case ('text') {
-                        <input 
-                          type="text" 
-                          class="form-input"
-                          [value]="currentRequirements.specifications[spec.name] || ''"
-                          (input)="currentRequirements.specifications[spec.name] = $event.target.value"
-                          [name]="spec.name"
-                          [placeholder]="'Any ' + spec.label.toLowerCase()">
-                      }
-                      @case ('number') {
-                        <input 
-                          type="number" 
-                          class="form-input"
-                          [value]="currentRequirements.specifications[spec.name] || ''"
-                          (input)="currentRequirements.specifications[spec.name] = $event.target.value"
-                          [name]="spec.name"
-                          [step]="spec.step || '1'"
-                          [placeholder]="'Desired ' + spec.label.toLowerCase()">
-                      }
-                      @case ('select') {
-                        <select 
-                          class="form-input"
-                          [value]="currentRequirements.specifications[spec.name] || ''"
-                          (change)="currentRequirements.specifications[spec.name] = $any($event.target).value"
-                          [name]="spec.name">
-                          <option value="">Any {{ spec.label.toLowerCase() }}</option>
-                          @for (option of spec.options; track option) {
-                            <option [value]="option">{{ option }}</option>
-                          }
-                        </select>
-                      }
-                      @case ('checkbox-group') {
-                        <div class="checkbox-group">
-                          @for (option of spec.options; track option) {
-                            <label class="checkbox-label">
-                              <input 
-                                type="checkbox"
-                                [value]="option"
-                                [checked]="currentRequirements.specifications[spec.name]?.includes(option)"
-                                (change)="onCheckboxChange(spec.name, option, $event)">
-                              {{ option }}
-                            </label>
-                          }
-                        </div>
-                      }
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- Summary Step -->
-          @if (currentStep() === 'summary') {
-            <div class="summary-step">
-              <h3>Build Summary</h3>
-              
-              @if (totalBudget()) {
-                <div class="budget-summary">
-                  <h4>Total Budget: ${{ totalBudget() }}</h4>
-                </div>
-              }
-
-              <div class="requirements-summary">
-                @for (type of componentTypes; track type) {
-                  <div class="requirement-item">
-                    <div class="requirement-header">
-                      <h5>{{ type }}</h5>
-                    </div>
-                    <p class="requirement-specs">
-                      {{ getSpecDisplay(buildRequirements()[type]!) }}
-                    </p>
-                  </div>
-                }
-              </div>
-
-              <div class="summary-actions">
-                <button class="btn btn-secondary" (click)="clearRequirements()">
-                  🗑️ Clear All
-                </button>
-                <button class="btn btn-primary" (click)="generateBuild()">
-                  🚀 Generate My Build
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-
-        <!-- Step Controls -->
-        <div class="step-controls">
-          @if (currentStep() !== 'CPU') {
-            <button class="btn btn-outline" (click)="previousStep()">
-              ← Previous
-            </button>
-          }
-          @if (currentStep() !== 'summary') {
-            <button class="btn btn-primary" (click)="nextStep()">
-              Next →
-            </button>
-          }
+          <small class="form-hint">This helps me recommend components that fit your budget</small>
         </div>
       </div>
+
+      <!-- Step Navigation -->
+      <div class="step-navigation">
+        @for (step of componentTypes; track step) {
+        <button class="step-button" [class.active]="currentStep() === step"
+          [class.completed]="buildRequirements()[step]?.specifications && Object.keys(buildRequirements()[step]!.specifications).length > 0"
+          (click)="goToStep(step)">
+          {{ step }}
+        </button>
+        }
+        <button class="step-button summary" [class.active]="currentStep() === 'summary'" (click)="goToStep('summary')">
+          📋 Summary
+        </button>
+      </div>
+
+      <!-- Step Content -->
+      <div class="step-content">
+        @if (currentStep() !== 'summary') {
+        <div class="component-step">
+          <h3>{{ currentStep() }} Requirements</h3>
+          <p class="step-description">Tell me what you're looking for in a {{ currentStep() }}. All fields are optional.
+          </p>
+
+          <!-- Specifications -->
+          <div class="specifications-form">
+            @for (spec of getSpecsForCurrentType(); track spec.name) {
+            <div class="form-group">
+              <label class="form-label">{{ spec.label }}</label>
+
+              @switch (spec.type) {
+              @case ('text') {
+              <input type="text" class="form-input" [value]="currentRequirements.specifications[spec.name] || ''"
+                (input)="currentRequirements.specifications[spec.name] = $any($event.target).value" [name]="spec.name"
+                [placeholder]="'Any ' + spec.label.toLowerCase()">
+              }
+              @case ('number') {
+              <input type="number" class="form-input" [value]="currentRequirements.specifications[spec.name] || ''"
+                (input)="currentRequirements.specifications[spec.name] = $any($event.target).value" [name]="spec.name"
+                [step]="spec.step || '1'" [placeholder]="'Desired ' + spec.label.toLowerCase()">
+              }
+              @case ('select') {
+              <select class="form-input" [value]="currentRequirements.specifications[spec.name] || ''"
+                (change)="currentRequirements.specifications[spec.name] = $any($event.target).value" [name]="spec.name">
+                <option value="">Any {{ spec.label.toLowerCase() }}</option>
+                @for (option of spec.options; track option) {
+                <option [value]="option">{{ option }}</option>
+                }
+              </select>
+              }
+              @case ('checkbox-group') {
+              <div class="checkbox-group">
+                @for (option of spec.options; track option) {
+                <label class="checkbox-label">
+                  <input type="checkbox" [value]="option"
+                    [checked]="currentRequirements.specifications[spec.name]?.includes(option)"
+                    (click)="onCheckboxChange(spec.name, option, $event)">
+                  {{ option }}
+                </label>
+                }
+              </div>
+              }
+              }
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- Summary Step -->
+        @if (currentStep() === 'summary') {
+        <div class="summary-step">
+          <h3>Build Summary</h3>
+
+          <!-- Build Name Input -->
+          <div class="build-input-section">
+            <label class="form-label">Build Name *</label>
+            <input type="text" class="form-input" [value]="buildName()" (input)="buildName.set($any($event.target).value)"
+              placeholder="Enter a name for your build" required>
+          </div>
+
+          <!-- Build Description Input -->
+          <div class="build-input-section">
+            <label class="form-label">Build Description (Optional)</label>
+            <textarea class="form-input" [value]="buildDescription()"
+              (input)="buildDescription.set($any($event.target).value)"
+              placeholder="Describe your build or any specific requirements" rows="3"></textarea>
+          </div>
+
+          @if (totalBudget()) {
+          <div class="budget-summary">
+            <h4>Budget: ${{ totalBudget() }}</h4>
+          </div>
+          }
+
+          <div class="requirements-summary">
+            <h4>Your Requirements:</h4>
+            @for (type of componentTypes; track type) {
+            <div class="requirement-item">
+              <div class="requirement-header">
+                <h5>{{ type }}</h5>
+              </div>
+              <p class="requirement-specs">
+                {{ getSpecDisplay(buildRequirements()[type]!) }}
+              </p>
+            </div>
+            }
+          </div>
+
+          <div class="summary-actions">
+            <button class="btn btn-secondary" (click)="clearRequirements()">
+              🗑️ Clear All
+            </button>
+            <!-- CHANGED: Button text to "Generate Build" -->
+            <button class="btn btn-primary" (click)="generateBuild()"
+              [disabled]="isGeneratingBuild() || !buildName().trim()">
+              @if (!isGeneratingBuild()) {
+              🚀 Generate Build
+              }
+              @if (isGeneratingBuild()) {
+              ⏳ Generating...
+              }
+            </button>
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- Step Controls -->
+      <div class="step-controls">
+        @if (currentStep() !== 'CPU') {
+        <button class="btn btn-outline" (click)="previousStep()">
+          ← Previous
+        </button>
+        }
+        @if (currentStep() !== 'summary') {
+        <button class="btn btn-primary" (click)="nextStep()">
+          Next →
+        </button>
+        }
+      </div>
     </div>
+
+    <!-- REMOVED: The entire generated build display section -->
+  </div>
   }
 
   <!-- Chat Tab -->
   @if (activeTab() === 'chat') {
-    <div class="tab-content">
-      <div class="chat-container">
-        <div class="chat-messages">
-          @for (message of chatMessages(); track $index) {
-            <div class="message" #messageElem [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
-              <div class="message-content">
-                {{ message.content }}
-              </div>
-              <div class="message-role">
-                {{ message.role === 'user' ? 'You' : 'PC Builder AI' }}
-              </div>
-            </div>
-          }
-          @if (isChatLoading) {
-            <div class="message assistant" #messageElem>
-              <div class="message-content typing">
-                <div class="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-            </div>
-          }
+  <div class="tab-content">
+    <div class="chat-container">
+      <div class="chat-messages">
+        @for (message of chatMessages(); track $index) {
+        <div class="message" #messageElem [class.user]="message.role === 'user'"
+          [class.assistant]="message.role === 'assistant'">
+          <div class="message-content">
+            {{ message.content }}
+          </div>
+          <div class="message-role">
+            {{ message.role === 'user' ? 'You' : 'PC Builder AI' }}
+          </div>
         </div>
+        }
+        @if (isChatLoading) {
+        <div class="message assistant" #messageElem>
+          <div class="message-content typing">
+            <div class="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
 
-        <div class="chat-input-container">
-          <input
-            type="text"
-            class="chat-input"
-            [(ngModel)]="newMessage"
-            placeholder="Ask about PC components, compatibility, or budget advice..."
-            (keyup.enter)="sendMessage()"
-            [disabled]="isChatLoading">
-          <button 
-            class="btn btn-primary" 
-            (click)="sendMessage()" 
-            [disabled]="!newMessage.trim() || isChatLoading">
-            Send
-          </button>
-        </div>
+      <div class="chat-input-container">
+        <input type="text" class="chat-input" [(ngModel)]="newMessage"
+          placeholder="Ask about PC components, compatibility, or budget advice..." (keyup.enter)="sendMessage()"
+          [disabled]="isChatLoading">
+        <button class="btn btn-primary" (click)="sendMessage()" [disabled]="!newMessage.trim() || isChatLoading">
+          Send
+        </button>
       </div>
     </div>
+  </div>
+  }
+
+  <!-- ADDED: My Builds Tab -->
+  @if (activeTab() === 'builds') {
+  <div class="tab-content">
+    <div class="builds-page">
+      <div class="page-header">
+        <h2>My Saved Builds</h2>
+        <p>All your generated PC builds in one place</p>
+      </div>
+
+      @if (userBuilds().length === 0) {
+      <div class="empty-state">
+        <h3>No builds yet</h3>
+        <p>Generate your first PC build using the Guided Build tool!</p>
+        <button class="btn btn-primary" (click)="activeTab.set('guided')">
+          🛠️ Start Guided Build
+        </button>
+      </div>
+      } @else {
+      <div class="builds-list">
+        @for (build of userBuilds(); track build.id) {
+        <div class="build-card">
+          <div class="build-header">
+            <div class="build-title">
+              <h4>{{ build.name }}</h4> <!-- NEW: Using build name -->
+              <span class="build-date">Created: {{ build.createdAt | date:'medium' }}</span> <!-- NEW: Creation date -->
+            </div>
+            <div class="build-meta">
+              @if (build.budget) {
+              <span class="build-budget">Budget: ${{ build.budget }}</span>
+              }
+              @if (build.totalPrice) {
+              <span class="build-price">Total: ${{ build.totalPrice }}</span>
+              }
+            </div>
+          </div>
+
+          <!-- Show description if available -->
+          @if (build.description) {
+          <div class="build-description">
+            <p>{{ build.description }}</p>
+          </div>
+          }
+
+          <div class="build-actions">
+            <button class="btn btn-outline btn-sm" (click)="deleteBuild(build)">
+              🗑️ Delete
+            </button>
+            <button class="btn btn-primary btn-sm" disabled>
+              ⚡ Generate Components (Coming Soon)
+            </button>
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
   }
 </div>

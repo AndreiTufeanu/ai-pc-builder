@@ -1,8 +1,13 @@
 package com.example.aipcbuilder.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class ChatResponse {
     private String response;
-    private Long messageId; // Added to track the message in database
+    private Long messageId;
 
     // Constructors
     public ChatResponse() {}
@@ -16,20 +21,4 @@ public class ChatResponse {
         this.messageId = messageId;
     }
 
-    // Getters and setters
-    public String getResponse() {
-        return response;
-    }
-
-    public void setResponse(String response) {
-        this.response = response;
-    }
-
-    public Long getMessageId() {
-        return messageId;
-    }
-
-    public void setMessageId(Long messageId) {
-        this.messageId = messageId;
-    }
 }

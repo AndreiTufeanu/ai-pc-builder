@@ -35,7 +35,7 @@ public class ChromaDBInitializer implements CommandLineRunner {
         List<PcComponent> components = componentRepository.findAll();
         if (!components.isEmpty()) {
             System.out.println("Syncing " + components.size() + " components to ChromaDB...");
-            chromaDBService.syncAllComponents(components);
+            chromaDBService.syncComponentsBatch(components); // Updated method name
         }
 
         // Sync latest messages for all users (limited to 50 per user)

@@ -120,18 +120,9 @@ public class PCBuilderService {
         return context.toString();
     }
 
-    /**
-     * Builds component context by limiting each component to first 4 lines
-     * This prevents the AI prompt from getting too long while keeping essential info:
-     * - Component name, type, manufacturer, model, and key details
-     */
     private String buildComponentContext(List<Map<String, Object>> componentResults) {
         return componentResults.stream()
-                .map(result -> {
-                    String doc = (String) result.get("document");
-                    // Limit to first 4 lines to keep context concise
-                    return doc.lines().limit(4).collect(Collectors.joining("\n"));
-                })
+                .map(result -> (String) result.get("document"))
                 .collect(Collectors.joining("\n---\n"));
     }
 }

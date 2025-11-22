@@ -247,7 +247,38 @@ export class UserDashboardComponent implements AfterViewChecked {
     }
 
     const budget = this.totalBudget();
-    const requirements = this.buildRequirements();
+    const rawRequirements = this.buildRequirements();
+
+    // Format requirements with units for the backend
+    const requirementsWithUnits: { [key in ComponentType]?: { specifications: { [key: string]: any } } } = {};
+
+    for (const [componentType, requirement] of Object.entries(rawRequirements)) {
+      if (requirement && requirement.specifications) {
+        const formattedSpecs: { [key: string]: any } = {};
+        const specs = this.componentService.getSpecsForType(componentType as ComponentType);
+
+        for (const spec of specs) {
+          const value = requirement.specifications[spec.name];
+
+          if (value !== '' && value !== null && value !== undefined) {
+            if (Array.isArray(value)) {
+              // For checkbox groups, store as array
+              formattedSpecs[spec.name] = value;
+            } else if (spec.unit && spec.type === 'number') {
+              // For numbers with units, store as string with unit
+              formattedSpecs[spec.name] = `${value} ${spec.unit}`;
+            } else {
+              // For other types, store as is
+              formattedSpecs[spec.name] = value;
+            }
+          }
+        }
+
+        requirementsWithUnits[componentType as ComponentType] = {
+          specifications: formattedSpecs
+        };
+      }
+    }
 
     // Validate build name
     if (!this.buildName().trim()) {
@@ -262,7 +293,7 @@ export class UserDashboardComponent implements AfterViewChecked {
       name: this.buildName(),
       description: this.buildDescription(),
       budget: budget,
-      requirements: requirements
+      requirements: requirementsWithUnits  // Send requirements with units
     };
 
     this.componentService.generateBuild(buildRequest).subscribe({

@@ -28,22 +28,14 @@ public class ChatController {
 
     @PostMapping
     public ChatResponse chat(@RequestBody ChatRequest request) {
-        System.out.println("Chat request from user ID: " + request.getUserId());
-        System.out.println("Message: " + request.getMessage());
+        System.out.println("Chat request from user ID: " + request.getUserId() + ", Message: " + request.getMessage());
 
-        // Get AI response first
         String aiResponse = pcBuilderService.getChatResponse(request.getMessage(), request.getUserId());
-
-        // Save both user message and AI response to database
-        ChatMessage savedMessage = chatMessageService.saveChatMessage(
-                request.getUserId(),
-                request.getMessage(),
-                aiResponse
-        );
+        ChatMessage savedMessage = chatMessageService.saveChatMessage(request.getUserId(), request.getMessage(), aiResponse);
 
         System.out.println("Chat message saved with ID: " + savedMessage.getId());
 
-        // Sync the latest messages for this user to ChromaDB (will automatically limit to 50)
+        // Sync latest messages to ChromaDB
         List<ChatMessage> userMessages = chatMessageService.getUserChatHistory(request.getUserId());
         chromaDBService.syncLatestUserMessages(request.getUserId(), userMessages);
 
@@ -52,7 +44,6 @@ public class ChatController {
 
     @GetMapping("/history/{userId}")
     public ResponseEntity<List<ChatMessage>> getChatHistory(@PathVariable Long userId) {
-        List<ChatMessage> messages = chatMessageService.getUserChatHistory(userId);
-        return ResponseEntity.ok(messages);
+        return ResponseEntity.ok(chatMessageService.getUserChatHistory(userId));
     }
 }

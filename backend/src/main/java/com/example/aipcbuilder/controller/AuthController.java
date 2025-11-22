@@ -4,15 +4,12 @@ import com.example.aipcbuilder.dto.LoginRequest;
 import com.example.aipcbuilder.dto.LoginResponse;
 import com.example.aipcbuilder.dto.SignupRequest;
 import com.example.aipcbuilder.dto.SignupResponse;
-import com.example.aipcbuilder.model.Role;
 import com.example.aipcbuilder.model.User;
-import com.example.aipcbuilder.repository.RoleRepository;
 import com.example.aipcbuilder.repository.UserRepository;
+import com.example.aipcbuilder.utils.AuthUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collections;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -20,88 +17,36 @@ import java.util.Optional;
 public class AuthController {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final AuthUtils authUtils;
 
-    public AuthController(UserRepository userRepository, RoleRepository roleRepository) {
+    public AuthController(UserRepository userRepository, AuthUtils authUtils) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
+        this.authUtils = authUtils;
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        // Find user by username
-        Optional<User> userOptional = userRepository.findByUsername(request.getUsername());
-
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(401).body(new LoginResponse(null, null, null, "Invalid username or password"));
-        }
-
-        User user = userOptional.get();
-
-        // Check password
-        if (!user.getPassword().equals(request.getPassword())) {
-            return ResponseEntity.status(401).body(new LoginResponse(null, null, null, "Invalid username or password"));
-        }
-
-        // Check if user is enabled
-        if (!user.isEnabled()) {
-            return ResponseEntity.status(401).body(new LoginResponse(null, null, null, "Account is disabled"));
-        }
-
-        // Convert roles to array
-        String[] roles = user.getRoles().stream()
-                .map(role -> role.getName())
-                .toArray(String[]::new);
-
-        // Return user ID in the response
-        LoginResponse response = new LoginResponse(
-                user.getId(), // Add user ID
-                user.getUsername(),
-                roles,
-                "Login successful"
-        );
-
-        return ResponseEntity.ok(response);
+        return userRepository.findByUsername(request.getUsername())
+                .map(user -> authUtils.validateLogin(user, request.getPassword()))
+                .orElse(ResponseEntity.status(401).body(new LoginResponse(null, null, null, "Invalid username or password")));
     }
 
     @PostMapping("/signup")
     public ResponseEntity<SignupResponse> signup(@RequestBody SignupRequest request) {
-        // Check if username already exists
         if (userRepository.existsByUsername(request.getUsername())) {
-            return ResponseEntity.badRequest()
-                    .body(new SignupResponse(false, "Username is already taken!"));
+            return authUtils.badRequest("Username is already taken!");
         }
 
-        // Validate password
-        if (request.getPassword() == null || request.getPassword().length() < 6) {
-            return ResponseEntity.badRequest()
-                    .body(new SignupResponse(false, "Password must be at least 6 characters long"));
-        }
-
-        if (!request.getPassword().equals(request.getConfirmPassword())) {
-            return ResponseEntity.badRequest()
-                    .body(new SignupResponse(false, "Passwords do not match"));
+        if (!authUtils.isValidPassword(request)) {
+            return authUtils.badRequest("Password must be at least 6 characters long and match confirmation");
         }
 
         try {
-            // Create new user
-            User user = new User();
-            user.setUsername(request.getUsername());
-            user.setPassword(request.getPassword());
-            user.setEnabled(true);
-
-            // Assign ROLE_USER by default
-            Role userRole = roleRepository.findByName("ROLE_USER")
-                    .orElseThrow(() -> new RuntimeException("Error: Role ROLE_USER not found."));
-            user.setRoles(Collections.singleton(userRole));
-
+            User user = authUtils.createUser(request);
             userRepository.save(user);
-
             return ResponseEntity.ok(new SignupResponse(true, "User registered successfully!"));
-
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(new SignupResponse(false, "Error during registration: " + e.getMessage()));
+            return authUtils.badRequest("Error during registration: " + e.getMessage());
         }
     }
 

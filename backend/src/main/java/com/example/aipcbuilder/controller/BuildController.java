@@ -2,6 +2,7 @@ package com.example.aipcbuilder.controller;
 
 import com.example.aipcbuilder.dto.BuildRequest;
 import com.example.aipcbuilder.dto.BuildResponse;
+import com.example.aipcbuilder.dto.BuildWithComponentsDTO;
 import com.example.aipcbuilder.model.Build;
 import com.example.aipcbuilder.service.BuildService;
 import org.springframework.http.ResponseEntity;
@@ -59,15 +60,9 @@ public class BuildController {
         }
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Build>> getUserBuilds(@PathVariable Long userId) {
-        try {
-            List<Build> builds = buildService.getUserBuilds(userId);
-            return ResponseEntity.ok(builds);
-        } catch (Exception e) {
-            System.err.println("Error fetching builds: " + e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
+    @GetMapping("/user/{userId}/builds")
+    public List<BuildWithComponentsDTO> getUserBuilds(@PathVariable Long userId) {
+        return buildService.getUserBuilds(userId);
     }
 
     @DeleteMapping("/{buildId}/user/{userId}")

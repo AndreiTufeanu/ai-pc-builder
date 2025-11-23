@@ -44,6 +44,23 @@ export interface Build {
   caseId: number | null;
 }
 
+export interface BuildWithComponents {
+  id: number;
+  userId: number;
+  name: string;
+  description: string;
+  totalPrice: number | null;
+  budget: number | null;
+  createdAt: string;
+  cpu: string;
+  gpu: string;
+  psu: string;
+  ram: string;
+  storage: string;
+  motherboard: string;
+  pcCase: string;
+}
+
 export enum ComponentType {
   CPU = 'CPU',
   GPU = 'GPU',
@@ -73,43 +90,39 @@ export interface ComponentSpecs {
 })
 export class ComponentService {
   private baseUrl = 'http://localhost:8080/api/admin/components';
+  private buildBaseUrl = 'http://localhost:8080/api/build';
 
   // Component specifications configuration
   readonly componentSpecs: ComponentSpecs = {
     CPU: [
-      { name: 'socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1700', 'LGA1200', 'LGA1151'], required: true },
+      { name: 'socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1851', 'LGA1700'], required: true },
       { name: 'cores', label: 'Cores', type: 'number', required: true },
       { name: 'threads', label: 'Threads', type: 'number', required: true },
       { name: 'baseClock', label: 'Base Clock', type: 'number', step: '0.1', required: true, unit: 'GHz' },
       { name: 'boostClock', label: 'Boost Clock', type: 'number', step: '0.1', unit: 'GHz' },
       { name: 'tdp', label: 'TDP', type: 'number', required: true, unit: 'W' },
-      { name: 'memoryType', label: 'Memory Type', type: 'select', options: ['DDR5', 'DDR4'], required: true }
     ],
     GPU: [
       { name: 'memory', label: 'Memory', type: 'number', required: true, unit: 'GB' },
-      { name: 'memoryType', label: 'Memory Type', type: 'select', options: ['GDDR6', 'GDDR6X', 'GDDR5', 'HBM2'], required: true },
+      { name: 'memoryType', label: 'Memory Type', type: 'select', options: ['GDDR7', 'GDDR6X', 'GDDR6'], required: true },
       { name: 'coreClock', label: 'Core Clock', type: 'number', unit: 'MHz' },
       { name: 'boostClock', label: 'Boost Clock', type: 'number', unit: 'MHz' },
       { name: 'length', label: 'Length', type: 'number', unit: 'mm' },
-      { name: 'powerConnectors', label: 'Power Connectors', type: 'select', options: ['1x 6-pin', '1x 8-pin', '2x 8-pin', '3x 8-pin', '12VHPWR (16-pin)', '2x 8-pin + 12VHPWR'], required: true },
+      { name: 'powerConnectors', label: 'Power Connectors', type: 'select', options: ['1 x 8-pin', '2 x 8-pin', '3 x 8-pin', '12VHPWR (16-pin)'], required: true },
       { name: 'tdp', label: 'TDP', type: 'number', required: true, unit: 'W' }
     ],
     PSU: [
       { name: 'wattage', label: 'Wattage', type: 'number', required: true, unit: 'W' },
-      { name: 'efficiency', label: 'Efficiency Rating', type: 'select', options: ['80+ Bronze', '80+ Gold', '80+ Platinum', '80+ Titanium'], required: true },
-      { name: 'formFactor', label: 'Form Factor', type: 'select', options: ['ATX', 'SFX', 'SFX-L'], required: true },
-      { name: 'modular', label: 'Modular', type: 'select', options: ['Non-modular', 'Semi-modular', 'Full modular'], required: true },
+      { name: 'efficiency', label: 'Efficiency Rating', type: 'select', options: ['80+ Silver', '80+ Gold', '80+ Platinum', '80+ Titanium'], required: true },
+      { name: 'formFactor', label: 'Form Factor', type: 'select', options: ['ATX', 'SFX'], required: true },
+      { name: 'atxStandard', label: 'ATX Standard', type: 'select', options: ['ATX 3.0', 'ATX 3.1'], required: true },
       {
         name: 'connectors', label: 'Available Connectors', type: 'checkbox-group', options: [
-          '24-pin ATX',
-          '8-pin EPS (CPU)',
-          '4+4 pin EPS (CPU)',
-          '6-pin PCIe',
-          '8-pin PCIe',
+          '1 x 8-pin',
+          '2 x 8-pin',
+          '3 x 8-pin',
           '12VHPWR (16-pin)',
           'SATA',
-          'Molex',
-          'Floppy'
         ]
       }
     ],
@@ -121,41 +134,24 @@ export class ComponentService {
       { name: 'modules', label: 'Number of Modules', type: 'number' }
     ],
     STORAGE: [
-      { name: 'type', label: 'Storage Type', type: 'select', options: ['NVMe SSD', 'SATA SSD', 'HDD'], required: true },
+      { name: 'type', label: 'Storage Type', type: 'select', options: ['NVMe 4.0', 'SATA III'], required: true },
       { name: 'capacity', label: 'Capacity', type: 'number', required: true, unit: 'TB' },
-      { name: 'formFactor', label: 'Form Factor', type: 'select', options: ['M.2', '2.5"', '3.5"'] },
-      { name: 'interface', label: 'Interface', type: 'select', options: ['PCIe 4.0', 'PCIe 3.0', 'SATA III'] },
       { name: 'readSpeed', label: 'Read Speed', type: 'number', unit: 'MB/s' },
       { name: 'writeSpeed', label: 'Write Speed', type: 'number', unit: 'MB/s' }
     ],
     MOTHERBOARD: [
-      { name: 'socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1700', 'LGA1200'], required: true },
-      { name: 'formFactor', label: 'Form Factor', type: 'select', options: ['ATX', 'mATX', 'ITX'], required: true },
-      { name: 'memoryType', label: 'Memory Type', type: 'select', options: ['DDR5', 'DDR4'], required: true },
-      { name: 'memorySlots', label: 'Memory Slots', type: 'number', required: true },
-      { name: 'maxMemory', label: 'Max Memory', type: 'number', required: true, unit: 'GB' },
-      { name: 'memorySpeed', label: 'Memory Speed', type: 'number', unit: 'MHz' },
-      { name: 'chipset', label: 'Chipset', type: 'text', required: true },
+      { name: 'socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1851', 'LGA1700'], required: true },
+      { name: 'formFactor', label: 'Form Factor', type: 'select', options: ['E-ATX', 'ATX', 'mATX', 'ITX'], required: true },
       {
         name: 'features', label: 'Features & Ports', type: 'checkbox-group', options: [
           'Wi-Fi',
-          'Bluetooth',
-          '2.5G Ethernet',
-          '10G Ethernet',
-          'USB-C Front Panel',
-          'RGB Headers',
-          'Multiple M.2 heatsinks',
-          'Thunderbolt',
-          'DisplayPort',
-          'HDMI'
         ]
       }
     ],
     CASE: [
-      { name: 'formFactor', label: 'Supported Form Factors', type: 'select', options: ['ATX', 'mATX', 'ITX', 'E-ATX'], required: true },
+      { name: 'formFactor', label: 'Supported Form Factors', type: 'select', options: ['E-ATX', 'ATX', 'mATX', 'ITX'], required: true },
       { name: 'maxGpuLength', label: 'Max GPU Length', type: 'number', unit: 'mm' },
       { name: 'fansIncluded', label: 'Fans Included', type: 'number' },
-      { name: 'frontPanelUsb', label: 'Front Panel USB', type: 'text' }
     ]
   };
 
@@ -186,18 +182,18 @@ export class ComponentService {
   }
 
   generateBuild(buildRequest: BuildRequest): Observable<BuildResponse> {
-    return this.http.post<BuildResponse>(`http://localhost:8080/api/build/generate`, buildRequest);
+    return this.http.post<BuildResponse>(`${this.buildBaseUrl}/generate`, buildRequest);
   }
 
   createBuild(buildRequest: BuildRequest): Observable<BuildResponse> {
-    return this.http.post<BuildResponse>(`http://localhost:8080/api/build`, buildRequest);
+    return this.http.post<BuildResponse>(`${this.buildBaseUrl}`, buildRequest);
   }
 
-  getUserBuilds(userId: number): Observable<Build[]> {
-    return this.http.get<Build[]>(`http://localhost:8080/api/build/user/${userId}`);
+  getUserBuilds(userId: number): Observable<BuildWithComponents[]> {
+    return this.http.get<BuildWithComponents[]>(`${this.buildBaseUrl}/user/${userId}/builds`);
   }
 
   deleteBuild(userId: number, buildId: number): Observable<void> {
-    return this.http.delete<void>(`http://localhost:8080/api/build/${buildId}/user/${userId}`);
+    return this.http.delete<void>(`${this.buildBaseUrl}/${buildId}/user/${userId}`);
   }
 }

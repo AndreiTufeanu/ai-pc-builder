@@ -1,66 +1,115 @@
+// BuildGenerationService.java
 package com.example.aipcbuilder.service;
 
+import com.example.aipcbuilder.dto.AIBuildRequest;
+import com.example.aipcbuilder.dto.AIBuildResponse;
 import com.example.aipcbuilder.model.Build;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.repository.PcComponentRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 @Service
 public class BuildGenerationService {
 
     private final PcComponentRepository componentRepository;
+    private final AIBuildService aiBuildService;
 
-    public BuildGenerationService(PcComponentRepository componentRepository) {
+    public BuildGenerationService(PcComponentRepository componentRepository, AIBuildService aiBuildService) {
         this.componentRepository = componentRepository;
+        this.aiBuildService = aiBuildService;
     }
 
     /**
-     * Generate a complete PC build based on requirements
-     * Requirements are used for generation but not stored in the Build entity
+     * Generate a complete PC build using AI based on requirements
      */
     public Build generateBuild(Build build, Map<String, Map<String, Object>> requirements) {
-        BigDecimal totalPrice = BigDecimal.ZERO;
+        System.out.println("=== AI Build Generation ===");
 
-        // Generate components for each type based on requirements
-        for (Map.Entry<String, Map<String, Object>> entry : requirements.entrySet()) {
-            String componentType = entry.getKey();
-            Map<String, Object> specs = entry.getValue();
+        try {
+            // Use AI to generate the build
+            AIBuildRequest aiRequest = new AIBuildRequest(
+                    build.getBudget() != null ? build.getBudget().doubleValue() : null,
+                    requirements
+            );
 
-            PcComponent selectedComponent = selectComponentForType(componentType, specs);
+            AIBuildResponse aiResponse = aiBuildService.generateAIBuild(aiRequest);
 
-            if (selectedComponent != null) {
-                // Set the component ID in the build
-                setComponentId(build, componentType, selectedComponent.getId());
+            if (aiResponse.isSuccess() && aiResponse.getComponentIds() != null) {
+                // Set the component IDs from AI response
+                setComponentIdsFromAI(build, aiResponse.getComponentIds());
 
-                // Add to total price
-                if (selectedComponent.getPrice() != null) {
-                    totalPrice = totalPrice.add(selectedComponent.getPrice());
-                }
+                // Calculate total price
+                BigDecimal totalPrice = calculateTotalPrice(aiResponse.getComponentIds());
+                build.setTotalPrice(totalPrice);
+
+                System.out.println("AI build generation successful");
+            } else {
+                // Fallback to simple selection if AI fails
+                System.err.println("AI generation failed, using fallback: " + aiResponse.getMessage());
+                fallbackBuildGeneration(build, requirements);
             }
+
+        } catch (Exception e) {
+            System.err.println("Error in AI build generation, using fallback: " + e.getMessage());
+            fallbackBuildGeneration(build, requirements);
         }
 
-        build.setTotalPrice(totalPrice);
         return build;
     }
 
-    private PcComponent selectComponentForType(String componentType, Map<String, Object> requirements) {
-        // For now, just select the first available component of this type
-        try {
-            PcComponent.ComponentType type = PcComponent.ComponentType.valueOf(componentType);
-            List<PcComponent> components = componentRepository.findByType(type);
+    private void setComponentIdsFromAI(Build build, Map<String, Long> componentIds) {
+        build.setCpuId(componentIds.get("cpuId"));
+        build.setGpuId(componentIds.get("gpuId"));
+        build.setPsuId(componentIds.get("psuId"));
+        build.setRamId(componentIds.get("ramId"));
+        build.setStorageId(componentIds.get("storageId"));
+        build.setMotherboardId(componentIds.get("motherboardId"));
+        build.setCaseId(componentIds.get("caseId"));
+    }
 
-            if (!components.isEmpty()) {
-                return components.get(0); // Simple selection for now
+    private BigDecimal calculateTotalPrice(Map<String, Long> componentIds) {
+        BigDecimal totalPrice = BigDecimal.ZERO;
+
+        for (Long componentId : componentIds.values()) {
+            if (componentId != null) {
+                componentRepository.findById(componentId)
+                        .ifPresent(component -> {
+                            if (component.getPrice() != null) {
+                                totalPrice.add(component.getPrice());
+                            }
+                        });
             }
-        } catch (IllegalArgumentException e) {
-            System.err.println("Invalid component type: " + componentType);
         }
 
-        return null;
+        return totalPrice;
+    }
+
+    /**
+     * Fallback method if AI generation fails
+     */
+    private void fallbackBuildGeneration(Build build, Map<String, Map<String, Object>> requirements) {
+        BigDecimal totalPrice = BigDecimal.ZERO;
+
+        // Simple component selection as fallback
+        for (Map.Entry<String, Map<String, Object>> entry : requirements.entrySet()) {
+            String componentType = entry.getKey();
+
+            // Get first available component of this type
+            componentRepository.findByType(PcComponent.ComponentType.valueOf(componentType))
+                    .stream()
+                    .findFirst()
+                    .ifPresent(component -> {
+                        setComponentId(build, componentType, component.getId());
+                        if (component.getPrice() != null) {
+                            totalPrice.add(component.getPrice());
+                        }
+                    });
+        }
+
+        build.setTotalPrice(totalPrice);
     }
 
     private void setComponentId(Build build, String componentType, Long componentId) {

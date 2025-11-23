@@ -611,8 +611,69 @@
   cursor: not-allowed;
 }
 
+.components-section {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.components-section h5 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+.components-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.75rem;
+}
+
+.component-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.component-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.875rem;
+}
+
+.component-name {
+  color: #007bff;
+  font-size: 0.875rem;
+  text-align: right;
+  flex: 1;
+  margin-left: 1rem;
+}
+
+
 /* Responsive Design */
 @media (max-width: 768px) {
+  .components-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .component-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .component-name {
+    margin-left: 0;
+    text-align: left;
+  }
   .user-dashboard {
     padding: 10px;
   }

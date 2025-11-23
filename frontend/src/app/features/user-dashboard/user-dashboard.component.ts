@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { Build, BuildRequest, ComponentService, ComponentType, PcComponent, type ComponentSpec } from '../../core/services/component.service';
+import { Build, BuildRequest, BuildWithComponents, ComponentService, ComponentType, PcComponent, type ComponentSpec } from '../../core/services/component.service';
 import { ChatService } from '../../core/services/chat.service';
 import { Subscription } from 'rxjs';
 
@@ -21,7 +21,7 @@ interface BuildRequirement {
   styleUrls: ['./user-dashboard.component.css']
 })
 export class UserDashboardComponent implements AfterViewChecked {
-  userBuilds = signal<Build[]>([]);
+  userBuilds = signal<BuildWithComponents[]>([]);
   activeTab = signal<'guided' | 'chat' | 'builds'>('guided');
   protected readonly Object = Object;
   @ViewChildren('messageElem') private messageElems!: QueryList<ElementRef<HTMLElement>>;
@@ -327,6 +327,7 @@ export class UserDashboardComponent implements AfterViewChecked {
     this.componentService.getUserBuilds(userId).subscribe({
       next: (builds) => {
         this.userBuilds.set(builds);
+        console.log('Loaded builds with components:', builds);
       },
       error: (error) => {
         console.error('Error loading builds:', error);
@@ -334,11 +335,11 @@ export class UserDashboardComponent implements AfterViewChecked {
     });
   }
 
-  deleteBuild(build: Build): void {
+  deleteBuild(build: BuildWithComponents): void {
     const userId = this.authService.getCurrentUserId();
     if (!userId) return;
 
-    if (confirm(`Are you sure you want to delete this build?`)) {
+    if (confirm(`Are you sure you want to delete "${build.name}"?`)) {
       this.componentService.deleteBuild(userId, build.id).subscribe({
         next: () => {
           this.loadUserBuilds(); // Reload the list
@@ -379,10 +380,6 @@ export class UserDashboardComponent implements AfterViewChecked {
       .filter(str => str !== '');
 
     return specStrings.length > 0 ? specStrings.join('; ') : 'No specific requirements';
-  }
-
-  logout(): void {
-    this.authService.logout();
   }
 
   private showFallbackWelcome(): void {

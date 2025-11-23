@@ -5,7 +5,6 @@
       <h1>Welcome, {{ authService.currentUser()?.username }}! 👋</h1>
       <p>Let's build your perfect PC together</p>
     </div>
-    <button class="btn btn-secondary" (click)="logout()">Logout</button>
   </header>
 
   <!-- Tab Navigation -->
@@ -116,8 +115,8 @@
           <!-- Build Name Input -->
           <div class="build-input-section">
             <label class="form-label">Build Name *</label>
-            <input type="text" class="form-input" [value]="buildName()" (input)="buildName.set($any($event.target).value)"
-              placeholder="Enter a name for your build" required>
+            <input type="text" class="form-input" [value]="buildName()"
+              (input)="buildName.set($any($event.target).value)" placeholder="Enter a name for your build" required>
           </div>
 
           <!-- Build Description Input -->
@@ -250,8 +249,8 @@
         <div class="build-card">
           <div class="build-header">
             <div class="build-title">
-              <h4>{{ build.name }}</h4> <!-- NEW: Using build name -->
-              <span class="build-date">Created: {{ build.createdAt | date:'medium' }}</span> <!-- NEW: Creation date -->
+              <h4>{{ build.name }}</h4>
+              <span class="build-date">Created: {{ build.createdAt | date:'medium' }}</span>
             </div>
             <div class="build-meta">
               @if (build.budget) {
@@ -270,12 +269,43 @@
           </div>
           }
 
+          <!-- Component List -->
+          <div class="components-section">
+            <h5>Components</h5>
+            <div class="components-grid">
+              <div class="component-item">
+                <span class="component-label">CPU:</span>
+                <span class="component-name">{{ build.cpu || 'Not selected' }}</span>
+              </div>
+              <div class="component-item">
+                <span class="component-label">GPU:</span>
+                <span class="component-name">{{ build.gpu || 'Not selected' }}</span>
+              </div>
+              <div class="component-item">
+                <span class="component-label">Motherboard:</span>
+                <span class="component-name">{{ build.motherboard || 'Not selected' }}</span>
+              </div>
+              <div class="component-item">
+                <span class="component-label">RAM:</span>
+                <span class="component-name">{{ build.ram || 'Not selected' }}</span>
+              </div>
+              <div class="component-item">
+                <span class="component-label">Storage:</span>
+                <span class="component-name">{{ build.storage || 'Not selected' }}</span>
+              </div>
+              <div class="component-item">
+                <span class="component-label">PSU:</span>
+                <span class="component-name">{{ build.psu || 'Not selected' }}</span>
+              </div>
+              <div class="component-item">
+                <span class="component-label">Case:</span>
+                <span class="component-name">{{ build.pcCase || 'Not selected' }}</span>
+              </div>
+            </div>
+          </div>
           <div class="build-actions">
             <button class="btn btn-outline btn-sm" (click)="deleteBuild(build)">
               🗑️ Delete
-            </button>
-            <button class="btn btn-primary btn-sm" disabled>
-              ⚡ Generate Components (Coming Soon)
             </button>
           </div>
         </div>

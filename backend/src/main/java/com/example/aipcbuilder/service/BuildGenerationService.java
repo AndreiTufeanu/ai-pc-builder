@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class BuildGenerationService {
@@ -75,12 +76,13 @@ public class BuildGenerationService {
 
         for (Long componentId : componentIds.values()) {
             if (componentId != null) {
-                componentRepository.findById(componentId)
-                        .ifPresent(component -> {
-                            if (component.getPrice() != null) {
-                                totalPrice.add(component.getPrice());
-                            }
-                        });
+                Optional<PcComponent> componentOpt = componentRepository.findById(componentId);
+                if (componentOpt.isPresent()) {
+                    PcComponent component = componentOpt.get();
+                    if (component.getPrice() != null) {
+                        totalPrice = totalPrice.add(component.getPrice());
+                    }
+                }
             }
         }
 

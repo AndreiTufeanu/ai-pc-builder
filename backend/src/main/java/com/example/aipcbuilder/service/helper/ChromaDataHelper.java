@@ -3,8 +3,6 @@ package com.example.aipcbuilder.service.helper;
 import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.model.PcComponent;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -34,11 +32,5 @@ public class ChromaDataHelper {
         data.put("ai_response", message.getAiResponse());
         data.put("created_at", message.getCreatedAt().toString());
         return data;
-    }
-
-    public <T> HttpEntity<T> createRequest(T body) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        return new HttpEntity<>(body, headers);
     }
 }

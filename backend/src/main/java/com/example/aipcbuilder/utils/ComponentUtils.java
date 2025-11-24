@@ -9,6 +9,12 @@ import java.util.Map;
 @Component
 public class ComponentUtils {
 
+    private final ResponseHelper responseHelper;
+
+    public ComponentUtils(ResponseHelper responseHelper) {
+        this.responseHelper = responseHelper;
+    }
+
     public boolean isValidComponentRequest(Map<String, Object> requestData) {
         return requestData.containsKey("name") &&
                 !requestData.get("name").toString().trim().isEmpty() &&
@@ -53,10 +59,10 @@ public class ComponentUtils {
     }
 
     public ResponseEntity<?> badRequest(String message) {
-        return ResponseEntity.badRequest().body("{\"message\": \"" + message + "\"}");
+        return responseHelper.badRequest(message);
     }
 
     public ResponseEntity<?> internalServerError(String message) {
-        return ResponseEntity.internalServerError().body("{\"message\": \"" + message + "\"}");
+        return responseHelper.internalServerError(message);
     }
 }

@@ -20,14 +20,6 @@ export class HeaderComponent {
     this.authService.logout();
   }
 
-  navigateToDashboard(): void {
-    if (this.authService.isAdmin()) {
-      this.router.navigate(['/admin']);
-    } else {
-      this.router.navigate(['/user-dashboard']);
-    }
-  }
-
   navigateToHome(): void {
     this.router.navigate(['/']);
   }

@@ -11,9 +11,6 @@
           <span class="user-badge" [class.admin]="authService.isAdmin()">
             {{ authService.isAdmin() ? 'Admin' : 'User' }}
           </span>
-          <button class="btn btn-outline btn-sm" (click)="navigateToDashboard()">
-            {{ authService.isAdmin() ? 'Admin Dashboard' : 'My Dashboard' }}
-          </button>
           <button class="btn btn-secondary btn-sm" (click)="logout()">
             Logout
           </button>

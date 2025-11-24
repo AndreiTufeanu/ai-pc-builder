@@ -176,6 +176,34 @@ public class ChromaDBService {
         syncUserMessages(latestMessages);
     }
 
+    public void syncAdminKnowledge(List<ChatMessage> adminMessages) {
+        try {
+            for (ChatMessage message : adminMessages) {
+                Map<String, Object> metadata = Map.of(
+                        "timestamp", message.getCreatedAt().toString(),
+                        "source", "admin_training",
+                        "message_id", message.getId().toString(),
+                        "admin_user_id", message.getUserId().toString()
+                );
+
+                // Use the user message as the knowledge content
+                addAdminKnowledge(message.getUserMessage(), "TRAINING", metadata);
+            }
+            System.out.println("✓ Synced " + adminMessages.size() + " admin knowledge items to ChromaDB");
+        } catch (Exception e) {
+            System.err.println("Error syncing admin knowledge to ChromaDB: " + e.getMessage());
+        }
+    }
+
+    public void clearAdminKnowledge() {
+        try {
+            restTemplate.delete(chromaDbServerUrl + "/admin/knowledge/clear");
+            System.out.println("✓ Cleared existing admin knowledge in ChromaDB");
+        } catch (Exception e) {
+            System.err.println("Error clearing admin knowledge: " + e.getMessage());
+        }
+    }
+
     // Startup cleanup
     public void performStartupCleanup() {
         try {

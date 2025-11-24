@@ -4,6 +4,7 @@ import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.repository.ChatMessageRepository;
 import com.example.aipcbuilder.repository.PcComponentRepository;
+import com.example.aipcbuilder.repository.UserRepository;
 import com.example.aipcbuilder.service.ChromaDBService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -15,14 +16,18 @@ public class ChromaDBInitializer implements CommandLineRunner {
 
     private final PcComponentRepository componentRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final UserRepository userRepository;
     private final ChromaDBService chromaDBService;
+
 
     public ChromaDBInitializer(PcComponentRepository componentRepository,
                                ChatMessageRepository chatMessageRepository,
-                               ChromaDBService chromaDBService) {
+                               ChromaDBService chromaDBService,
+                               UserRepository userRepository) {
         this.componentRepository = componentRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.chromaDBService = chromaDBService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -36,6 +41,20 @@ public class ChromaDBInitializer implements CommandLineRunner {
         if (!components.isEmpty()) {
             System.out.println("Syncing " + components.size() + " components to ChromaDB...");
             chromaDBService.syncComponentsBatch(components); // Updated method name
+        }
+
+        // Clear and sync admin knowledge from all admin users
+        chromaDBService.clearAdminKnowledge();
+        List<Long> adminUserIds = userRepository.findAdminUserIds();
+        if (!adminUserIds.isEmpty()) {
+            System.out.println("Found " + adminUserIds.size() + " admin users");
+            for (Long adminId : adminUserIds) {
+                List<ChatMessage> adminMessages = chatMessageRepository.findByUserIdOrderByCreatedAtDesc(adminId);
+                if (!adminMessages.isEmpty()) {
+                    System.out.println("Syncing " + adminMessages.size() + " admin knowledge messages from user " + adminId);
+                    chromaDBService.syncAdminKnowledge(adminMessages);
+                }
+            }
         }
 
         // Sync latest messages for all users (limited to 50 per user)

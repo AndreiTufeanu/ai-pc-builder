@@ -221,6 +221,7 @@ async def upsert_components(components: List[ComponentData]):
         for component in components:
             # Create a document string that includes all relevant information
             doc_text = f"""
+            [ID: {component.id}]
             Component: {component.name}
             Type: {component.type}
             Manufacturer: {component.manufacturer or 'Unknown'}

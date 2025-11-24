@@ -1,22 +1,24 @@
 package com.example.aipcbuilder.service;
 
+import com.example.aipcbuilder.service.helper.ContextBuilderHelper;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class PCBuilderService {
 
     private final ChatClient chatClient;
     private final ChromaDBService chromaDBService;
+    private final ContextBuilderHelper contextBuilder;
 
-    public PCBuilderService(ChatModel chatModel, ChromaDBService chromaDBService) {
+    public PCBuilderService(ChatModel chatModel, ChromaDBService chromaDBService, ContextBuilderHelper contextBuilder) {
         this.chatClient = ChatClient.create(chatModel);
         this.chromaDBService = chromaDBService;
+        this.contextBuilder = contextBuilder;
     }
 
     public String getChatResponse(String userMessage, Long userId) {
@@ -33,7 +35,7 @@ public class PCBuilderService {
         System.out.println("Found " + knowledgeResults.size() + " relevant knowledge items");
         System.out.println("Found " + userContextResults.size() + " relevant user context items");
 
-        String context = buildContext(componentResults, knowledgeResults, userContextResults);
+        String context = contextBuilder.buildContext(componentResults, knowledgeResults, userContextResults);
         System.out.println("Context built: " + (context.length() > 0));
 
         String systemPrompt = """
@@ -71,7 +73,7 @@ public class PCBuilderService {
         // Search for relevant components to provide context
         List<Map<String, Object>> componentResults = chromaDBService.searchComponents(userMessage, 2);
         String context = componentResults.isEmpty() ? "" :
-                "\nRelevant Components:\n" + buildComponentContext(componentResults);
+                "\nRelevant Components:\n" + contextBuilder.buildComponentContext(componentResults);
 
         String systemPrompt = """
             You are receiving training information about PC components and building.
@@ -87,42 +89,5 @@ public class PCBuilderService {
                 .user("Training information: " + userMessage)
                 .call()
                 .content();
-    }
-
-    private String buildContext(List<Map<String, Object>> componentResults,
-                                List<Map<String, Object>> knowledgeResults,
-                                List<Map<String, Object>> userContextResults) {
-        StringBuilder context = new StringBuilder();
-
-        if (!componentResults.isEmpty()) {
-            context.append("=== AVAILABLE COMPONENTS ===\n");
-            context.append(buildComponentContext(componentResults));
-        }
-
-        if (!knowledgeResults.isEmpty()) {
-            context.append("\n=== EXPERT KNOWLEDGE ===\n");
-            for (Map<String, Object> result : knowledgeResults) {
-                String doc = (String) result.get("document");
-                context.append("- ").append(doc).append("\n");
-            }
-        }
-
-        if (!userContextResults.isEmpty()) {
-            context.append("\n=== PREVIOUS CONVERSATION ===\n");
-            for (Map<String, Object> result : userContextResults) {
-                String doc = (String) result.get("document");
-                // Extract first 3 lines for brevity
-                String preview = doc.lines().limit(3).collect(Collectors.joining("\n"));
-                context.append("- ").append(preview).append("\n");
-            }
-        }
-
-        return context.toString();
-    }
-
-    private String buildComponentContext(List<Map<String, Object>> componentResults) {
-        return componentResults.stream()
-                .map(result -> (String) result.get("document"))
-                .collect(Collectors.joining("\n---\n"));
     }
 }

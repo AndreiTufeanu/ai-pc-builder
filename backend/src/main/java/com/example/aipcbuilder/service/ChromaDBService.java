@@ -3,6 +3,7 @@ package com.example.aipcbuilder.service;
 import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.service.helper.ChromaDataHelper;
+import com.example.aipcbuilder.utils.HttpHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -21,8 +22,8 @@ public class ChromaDBService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ChromaDataHelper chromaDataHelper;
+    private final HttpHelper httpHelper;
 
-    // Component data methods
     public void syncComponent(PcComponent component) {
         syncComponentsBatch(Collections.singletonList(component));
     }
@@ -40,7 +41,7 @@ public class ChromaDBService {
     }
 
     private void upsertComponentsToChromaDB(List<Map<String, Object>> componentsData) {
-        HttpEntity<List<Map<String, Object>>> request = chromaDataHelper.createRequest(componentsData);
+        HttpEntity<List<Map<String, Object>>> request = httpHelper.createJsonRequest(componentsData);
 
         ResponseEntity<String> response = restTemplate.postForEntity(
                 chromaDbServerUrl + "/components/upsert",
@@ -71,7 +72,7 @@ public class ChromaDBService {
             knowledgeData.put("knowledge_type", knowledgeType);
             knowledgeData.put("metadata", metadata != null ? metadata : new HashMap<>());
 
-            HttpEntity<Map<String, Object>> request = chromaDataHelper.createRequest(knowledgeData);
+            HttpEntity<Map<String, Object>> request = httpHelper.createJsonRequest(knowledgeData);
 
             ResponseEntity<String> response = restTemplate.postForEntity(
                     chromaDbServerUrl + "/admin/knowledge",
@@ -108,7 +109,7 @@ public class ChromaDBService {
                     "n_results", nResults
             );
 
-            HttpEntity<Map<String, Object>> request = chromaDataHelper.createRequest(searchRequest);
+            HttpEntity<Map<String, Object>> request = httpHelper.createJsonRequest(searchRequest);
 
             ResponseEntity<Map> response = restTemplate.postForEntity(
                     chromaDbServerUrl + "/search",
@@ -150,7 +151,7 @@ public class ChromaDBService {
                     .map(chromaDataHelper::createUserMessageData)
                     .collect(Collectors.toList());
 
-            HttpEntity<List<Map<String, Object>>> request = chromaDataHelper.createRequest(messageData);
+            HttpEntity<List<Map<String, Object>>> request = httpHelper.createJsonRequest(messageData);
 
             ResponseEntity<String> response = restTemplate.postForEntity(
                     chromaDbServerUrl + "/user_messages/upsert",

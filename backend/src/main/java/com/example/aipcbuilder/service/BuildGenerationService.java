@@ -47,15 +47,10 @@ public class BuildGenerationService {
                 build.setTotalPrice(totalPrice);
 
                 System.out.println("AI build generation successful");
-            } else {
-                // Fallback to simple selection if AI fails
-                System.err.println("AI generation failed, using fallback: " + aiResponse.getMessage());
-                fallbackBuildGeneration(build, requirements);
             }
 
         } catch (Exception e) {
             System.err.println("Error in AI build generation, using fallback: " + e.getMessage());
-            fallbackBuildGeneration(build, requirements);
         }
 
         return build;
@@ -87,56 +82,5 @@ public class BuildGenerationService {
         }
 
         return totalPrice;
-    }
-
-    /**
-     * Fallback method if AI generation fails
-     */
-    private void fallbackBuildGeneration(Build build, Map<String, Map<String, Object>> requirements) {
-        BigDecimal totalPrice = BigDecimal.ZERO;
-
-        // Simple component selection as fallback
-        for (Map.Entry<String, Map<String, Object>> entry : requirements.entrySet()) {
-            String componentType = entry.getKey();
-
-            // Get first available component of this type
-            componentRepository.findByType(PcComponent.ComponentType.valueOf(componentType))
-                    .stream()
-                    .findFirst()
-                    .ifPresent(component -> {
-                        setComponentId(build, componentType, component.getId());
-                        if (component.getPrice() != null) {
-                            totalPrice.add(component.getPrice());
-                        }
-                    });
-        }
-
-        build.setTotalPrice(totalPrice);
-    }
-
-    private void setComponentId(Build build, String componentType, Long componentId) {
-        switch (componentType) {
-            case "CPU":
-                build.setCpuId(componentId);
-                break;
-            case "GPU":
-                build.setGpuId(componentId);
-                break;
-            case "PSU":
-                build.setPsuId(componentId);
-                break;
-            case "RAM":
-                build.setRamId(componentId);
-                break;
-            case "STORAGE":
-                build.setStorageId(componentId);
-                break;
-            case "MOTHERBOARD":
-                build.setMotherboardId(componentId);
-                break;
-            case "CASE":
-                build.setCaseId(componentId);
-                break;
-        }
     }
 }

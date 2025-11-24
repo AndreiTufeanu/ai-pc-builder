@@ -282,6 +282,20 @@ async def delete_component(component_id: str):
 
 
 # Admin knowledge endpoints
+
+@app.delete("/admin/knowledge/clear")
+async def clear_admin_knowledge():
+    """Clear all admin knowledge from ChromaDB"""
+    try:
+        # Get all admin knowledge IDs
+        all_data = admin_knowledge_collection.get()
+        if all_data['ids']:
+            admin_knowledge_collection.delete(ids=all_data['ids'])
+            return {"message": f"Cleared {len(all_data['ids'])} admin knowledge entries"}
+        return {"message": "No admin knowledge to clear"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing admin knowledge: {str(e)}")
+
 @app.post("/admin/knowledge")
 async def add_admin_knowledge(knowledge: AdminKnowledge):
     """Add admin training/knowledge to separate collection (no user ID)"""

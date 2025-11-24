@@ -137,7 +137,7 @@ public class AIBuildService {
             String searchQuery = componentSelector.buildComponentSpecificQuery(
                     componentType, requirements, alreadySelected, remainingBudget, iteration);
 
-            List<Map<String, Object>> componentResults = chromaDBService.searchComponents(searchQuery, 5);
+            List<Map<String, Object>> componentResults = chromaDBService.searchComponents(searchQuery, 2);
             List<Map<String, Object>> knowledgeResults = chromaDBService.searchAdminKnowledge(searchQuery, 3);
 
             if (componentResults.isEmpty()) {
@@ -157,9 +157,9 @@ public class AIBuildService {
                     .content();
 
             System.out.println(componentType + " selection response: " + response);
-            String componentName = componentSelector.parseComponentNameFromResponse(response, componentType);
+            String componentId = componentSelector.parseComponentIdFromResponse(response, componentType);
 
-            return componentSelector.findComponentByName(componentName, componentType);
+            return componentSelector.findComponentById(componentId, componentType);
 
         } catch (Exception e) {
             System.err.println("Error selecting " + componentType + ": " + e.getMessage());

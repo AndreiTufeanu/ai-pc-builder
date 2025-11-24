@@ -5,6 +5,7 @@ import com.example.aipcbuilder.repository.PcComponentRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class ComponentSelector {
@@ -15,22 +16,41 @@ public class ComponentSelector {
         this.componentRepository = componentRepository;
     }
 
-    public PcComponent findComponentByName(String componentName, String componentType) {
-        if (componentName == null || componentName.trim().isEmpty()) {
+    public PcComponent findComponentById(String componentId, String componentType) {
+        if (componentId == null || componentId.trim().isEmpty()) {
             return null;
         }
         try {
-            String cleanName = componentName.trim();
-            PcComponent component = componentRepository.findByName(cleanName);
-            if (component != null) {
-                return component;
+            Long id = Long.parseLong(componentId.trim());
+            Optional<PcComponent> component = componentRepository.findById(id);
+            if (component.isPresent()) {
+                return component.get();
             }
-            System.err.println("Could not find component in database: " + cleanName + " for type: " + componentType);
+            System.err.println("Could not find component in database with ID: " + componentId + " for type: " + componentType);
+            return null;
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid component ID format: " + componentId + " for type: " + componentType);
             return null;
         } catch (Exception e) {
-            System.err.println("Error finding component by name: " + e.getMessage());
+            System.err.println("Error finding component by ID: " + e.getMessage());
             return null;
         }
+    }
+
+    public String parseComponentIdFromResponse(String response, String componentType) {
+        if (response == null) return null;
+
+        String cleanResponse = response.replaceAll("[\"{}]", "").trim();
+
+        String idOnly = cleanResponse.replaceAll("[^0-9]", "").trim();
+
+        if (!idOnly.isEmpty()) {
+            System.out.println("Parsed component ID: '" + idOnly + "' from response: '" + cleanResponse + "'");
+            return idOnly;
+        }
+
+        System.err.println("Could not parse component ID from response: " + cleanResponse + " for type: " + componentType);
+        return null;
     }
 
     public String buildComponentSpecificQuery(String componentType,
@@ -78,16 +98,5 @@ public class ComponentSelector {
         }
 
         return query.toString().trim();
-    }
-
-    public String parseComponentNameFromResponse(String response, String componentType) {
-        String cleanResponse = response.replaceAll("[\"{}]", "").trim();
-        if (cleanResponse.contains(":")) {
-            String[] parts = cleanResponse.split(":");
-            if (parts.length == 2) {
-                return parts[1].trim();
-            }
-        }
-        return cleanResponse;
     }
 }

@@ -31,16 +31,16 @@ public class PromptBuilder {
             2. **You CANNOT use components that are not in this list. Your database only contains these components.**
             3. Choose the component that best matches the user's requirements and budget.
             4. Ensure compatibility with already selected components if specified.
-            5. You MUST use the EXACT FULL component name exactly as it appears in the list.
-            6. Do NOT shorten or modify the component names in any way.
-            7. **CRITICAL: Your response must contain ONLY the component name, NO other text, NO explanations, NO reasoning.**
+            5. **You MUST return ONLY the component ID (the number in [ID: ...]) from the list.**
+            6. Do NOT return the component name or any other text.
+            7. **CRITICAL: Your response must contain ONLY the component ID, NO other text, NO explanations, NO reasoning.**
             
             ===== AVAILABLE %s OPTIONS =====
             %s
             
             ===== OUTPUT FORMAT =====
-            Return ONLY the exact component name from the list above, nothing else.
-            Example: "AMD Ryzen 5 9600X"
+            Return ONLY the component ID from the list above, nothing else.
+            Example: "123"
             
             **ANY OTHER TEXT IN YOUR RESPONSE WILL CAUSE THE BUILD TO FAIL.**
             **YOU CANNOT USE COMPONENTS NOT IN THIS LIST.**
@@ -49,7 +49,7 @@ public class PromptBuilder {
 
     private String buildRefinementPrompt(String componentType, String context, PcComponent previousSelection) {
         String previousInfo = previousSelection != null ?
-                "Previous selection: " + previousSelection.getName() + " ($" + previousSelection.getPrice() + ")" :
+                "Previous selection ID: " + previousSelection.getId() + " (" + previousSelection.getName() + " - $" + previousSelection.getPrice() + ")" :
                 "No previous selection";
 
         return """
@@ -60,9 +60,9 @@ public class PromptBuilder {
             2. Choose a more cost-effective alternative that maintains good performance.
             3. Ensure compatibility with already selected components.
             4. Consider the budget feedback provided in the requirements.
-            5. You MUST use the EXACT FULL component name exactly as it appears in the list.
-            6. Do NOT shorten or modify the component names in any way.
-            7. **CRITICAL: Your response must contain ONLY the component name, NO other text, NO explanations, NO reasoning.**
+            5. **You MUST return ONLY the component ID (the number in [ID: ...]) from the list.**
+            6. Do NOT return the component name or any other text.
+            7. **CRITICAL: Your response must contain ONLY the component ID, NO other text, NO explanations, NO reasoning.**
             
             %s
             
@@ -70,7 +70,7 @@ public class PromptBuilder {
             %s
             
             ===== OUTPUT FORMAT =====
-            Return ONLY the exact component name from the list above, nothing else.
+            Return ONLY the component ID from the list above, nothing else.
             
             **ANY OTHER TEXT IN YOUR RESPONSE WILL CAUSE THE BUILD TO FAIL.**
             """.formatted(previousInfo, componentType, context);
@@ -113,14 +113,15 @@ public class PromptBuilder {
             message.append("\nAlready selected components (ensure compatibility):\n");
             for (Map.Entry<String, PcComponent> entry : alreadySelected.entrySet()) {
                 if (entry.getValue() != null) {
-                    message.append("  - ").append(entry.getKey()).append(": ").append(entry.getValue().getName())
+                    message.append("  - ").append(entry.getKey()).append(": [ID: ").append(entry.getValue().getId())
+                            .append("] ").append(entry.getValue().getName())
                             .append(" ($").append(entry.getValue().getPrice()).append(")\n");
                 }
             }
         }
 
         message.append("\nRemaining budget: $").append(remainingBudget);
-        message.append("\n\nReturn only the exact component name from the available options.");
+        message.append("\n\nReturn only the component ID from the available options.");
 
         return message.toString();
     }
@@ -158,7 +159,7 @@ public class PromptBuilder {
             String key = priority.toLowerCase();
             PcComponent component = currentBuild.get(key);
             if (component != null && component.getPrice() != null) {
-                instruction.append("- ").append(priority).append(": $").append(component.getPrice())
+                instruction.append("- ").append(priority).append(": [ID: ").append(component.getId()).append("] $").append(component.getPrice())
                         .append(" (").append(component.getName()).append(")\n");
             }
         }

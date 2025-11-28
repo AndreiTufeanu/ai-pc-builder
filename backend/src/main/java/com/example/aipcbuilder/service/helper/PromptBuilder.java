@@ -15,14 +15,16 @@ public class PromptBuilder {
     );
 
     public String buildComponentSelectionPrompt(String componentType, String context, int iteration, PcComponent previousSelection) {
+        String compatibilityRules = buildCompatibilityRules(componentType);
+
         if (iteration == 1) {
-            return buildInitialSelectionPrompt(componentType, context);
+            return buildInitialSelectionPrompt(componentType, context, compatibilityRules);
         } else {
-            return buildRefinementPrompt(componentType, context, previousSelection);
+            return buildRefinementPrompt(componentType, context, previousSelection, compatibilityRules);
         }
     }
 
-    private String buildInitialSelectionPrompt(String componentType, String context) {
+    private String buildInitialSelectionPrompt(String componentType, String context, String compatibilityRules) {
         return """
             You are an expert PC building AI assistant. Your task is to select the best %s from the available options.
             
@@ -30,8 +32,9 @@ public class PromptBuilder {
             1. You MUST select ONLY from the provided component list below.
             2. **You CANNOT use components that are not in this list. Your database only contains these components.**
             3. Choose the component that best matches the user's requirements and budget.
-            4. Ensure compatibility with already selected components if specified.
-            5. **You MUST return ONLY the component ID (the number in [ID: ...]) from the list.**
+            4. **CRITICALLY ENSURE COMPATIBILITY with already selected components using these rules:**
+            %s
+            5. You MUST return ONLY the component ID (the number in [ID: ...]) from the list.
             6. Do NOT return the component name or any other text.
             7. **CRITICAL: Your response must contain ONLY the component ID, NO other text, NO explanations, NO reasoning.**
             
@@ -44,10 +47,10 @@ public class PromptBuilder {
             
             **ANY OTHER TEXT IN YOUR RESPONSE WILL CAUSE THE BUILD TO FAIL.**
             **YOU CANNOT USE COMPONENTS NOT IN THIS LIST.**
-            """.formatted(componentType, componentType, context);
+            """.formatted(componentType, compatibilityRules, componentType, context);
     }
 
-    private String buildRefinementPrompt(String componentType, String context, PcComponent previousSelection) {
+    private String buildRefinementPrompt(String componentType, String context, PcComponent previousSelection, String compatibilityRules) {
         String previousInfo = previousSelection != null ?
                 "Previous selection ID: " + previousSelection.getId() + " (" + previousSelection.getName() + " - $" + previousSelection.getPrice() + ")" :
                 "No previous selection";
@@ -58,9 +61,10 @@ public class PromptBuilder {
             CRITICAL INSTRUCTIONS:
             1. You MUST select ONLY from the provided component list below.
             2. Choose a more cost-effective alternative that maintains good performance.
-            3. Ensure compatibility with already selected components.
+            3. **CRITICALLY ENSURE COMPATIBILITY with already selected components using these rules:**
+            %s
             4. Consider the budget feedback provided in the requirements.
-            5. **You MUST return ONLY the component ID (the number in [ID: ...]) from the list.**
+            5. You MUST return ONLY the component ID (the number in [ID: ...]) from the list.
             6. Do NOT return the component name or any other text.
             7. **CRITICAL: Your response must contain ONLY the component ID, NO other text, NO explanations, NO reasoning.**
             
@@ -73,15 +77,75 @@ public class PromptBuilder {
             Return ONLY the component ID from the list above, nothing else.
             
             **ANY OTHER TEXT IN YOUR RESPONSE WILL CAUSE THE BUILD TO FAIL.**
-            """.formatted(previousInfo, componentType, context);
+            """.formatted(compatibilityRules, previousInfo, componentType, context);
+    }
+
+    private String buildCompatibilityRules(String componentType) {
+        return switch (componentType.toUpperCase()) {
+            case "MOTHERBOARD" -> """
+                    MOTHERBOARD COMPATIBILITY RULES:
+                    - CPU Socket: Must match the selected CPU socket exactly
+                    - Form Factor: Must fit in the selected case (E-ATX, ATX, mATX, ITX)
+                    """;
+            case "CPU" -> """
+                    CPU COMPATIBILITY RULES:
+                    - Socket: Must match the motherboard socket exactly
+                    - RAM Compatibility:
+                          * LGA1851 and AM5 sockets support ONLY DDR5
+                          * LGA1700 sockets support both DDR4 and DDR5
+                          * AM4 sockets support ONLY DDR4
+                    """;
+            case "RAM" -> """
+                    RAM COMPATIBILITY RULES:
+                    - CPU Socket Compatibility:
+                          * LGA1851 and AM5: DDR5 only
+                          * LGA1700: DDR4 or DDR5
+                          * AM4: DDR4 only
+                    """;
+            case "GPU" -> """
+                    GPU COMPATIBILITY RULES:
+                    - Case Fit: Must physically fit in case (check length)
+                    - Power Supply: Must have required connectors (1 x 8-pin, 2 x 8-pin, 3 x 8-pin or 12VHPWR (16-pin))
+                    """;
+            case "PSU" -> """
+                    PSU COMPATIBILITY RULES:
+                    - Wattage: Must provide sufficient power for all components (GPU and CPU are the main components when calculating). Make sure you add some headroom (20-30% more than estimated total power draw).
+                    - Connectors: Must have required connectors by the GPU (1 x 8-pin, 2 x 8-pin, 3 x 8-pin or 12VHPWR (16-pin))
+                    - Form Factor: Must fit in case (ATX, SFX)
+                    - Efficiency: Higher efficiency (80+ Silver, 80+ Gold, 80+ Platinum, 80+ Titanium) for better power delivery, if the budget allows it
+                    - Modern Standards: ATX 3.1 is always preferred for GPUs with 12VHPWR connectors and high tdp (350W+). ATX 3.0 alternatives are fine if any of these 2 conditions are not met.
+                    """;
+            case "CASE" -> """
+                    CASE COMPATIBILITY RULES:
+                    - Motherboard Form Factor: Must support motherboard size (E-ATX, ATX, mATX, ITX)
+                    - GPU Length: Must accommodate GPU length with clearance
+                    - PSU Form Factor: Must support PSU size (ATX, SFX)
+                    """;
+            case "STORAGE" -> """
+                    STORAGE COMPATIBILITY RULES:
+                    - Nothing specific, all storage types are generally compatible with motherboards
+                    """;
+            default -> "Ensure compatibility with all selected components based on their specifications.";
+        };
     }
 
     public String buildComponentSelectionMessage(String componentType,
                                                  Map<String, Map<String, Object>> requirements,
                                                  Map<String, PcComponent> alreadySelected,
                                                  double remainingBudget,
-                                                 int iteration) {
+                                                 int iteration,
+                                                 List<String> remainingComponents) {
         StringBuilder message = new StringBuilder();
+
+        message.append("=== BUILD PROGRESS ===\n");
+        message.append("Currently selecting: ").append(componentType).append("\n");
+
+        if (!remainingComponents.isEmpty()) {
+            message.append("Components remaining: ").append(String.join(" → ", remainingComponents)).append("\n");
+        } else {
+            message.append("This is the final component selection.\n");
+        }
+        message.append("\n");
 
         if (iteration > 1) {
             message.append("REFINEMENT ITERATION: Please select a more cost-effective ").append(componentType).append("\n\n");

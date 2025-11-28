@@ -111,7 +111,9 @@ public class PromptBuilder {
                     PSU COMPATIBILITY RULES:
                     - Wattage: Must provide sufficient power for all components (GPU and CPU are the main components when calculating). Make sure you add some headroom (20-30% more than estimated total power draw).
                     - Connectors: Must have required connectors by the GPU (1 x 8-pin, 2 x 8-pin, 3 x 8-pin or 12VHPWR (16-pin))
-                    - Form Factor: Must fit in case (ATX, SFX)
+                    - Form Factor: Must fit in case:
+                          * E-ATX, ATX, and mATX cases support both ATX and SFX PSUs
+                          * ITX cases support only SFX PSUs
                     - Efficiency: Higher efficiency (80+ Silver, 80+ Gold, 80+ Platinum, 80+ Titanium) for better power delivery, if the budget allows it
                     - Modern Standards: ATX 3.1 is always preferred for GPUs with 12VHPWR connectors and high tdp (350W+). ATX 3.0 alternatives are fine if any of these 2 conditions are not met.
                     """;
@@ -119,7 +121,9 @@ public class PromptBuilder {
                     CASE COMPATIBILITY RULES:
                     - Motherboard Form Factor: Must support motherboard size (E-ATX, ATX, mATX, ITX)
                     - GPU Length: Must accommodate GPU length with clearance
-                    - PSU Form Factor: Must support PSU size (ATX, SFX)
+                    - PSU Form Factor Support:
+                          * E-ATX, ATX, and mATX cases: Support both ATX and SFX PSUs
+                          * ITX cases: Support only SFX PSUs
                     """;
             case "STORAGE" -> """
                     STORAGE COMPATIBILITY RULES:

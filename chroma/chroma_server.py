@@ -38,6 +38,15 @@ user_messages_collection = chroma_client.get_or_create_collection(
     metadata={"description": "Last 50 chat messages per user for context"}
 )
 
+COMPONENT_SPECS_MAP = {
+    "CPU": ["socket", "cores", "threads", "baseClock", "boostClock", "tdp", "manufacturer", "model"],
+    "GPU": ["memory", "memoryType", "coreClock", "boostClock", "length", "powerConnectors", "tdp", "manufacturer", "model"],
+    "PSU": ["wattage", "efficiency", "formFactor", "atxStandard", "connectors", "manufacturer", "model"],
+    "RAM": ["capacity", "type", "speed", "latency", "modules", "manufacturer", "model"],
+    "STORAGE": ["type", "capacity", "readSpeed", "writeSpeed", "manufacturer", "model"],
+    "MOTHERBOARD": ["socket", "formFactor", "features", "manufacturer", "model"],
+    "CASE": ["formFactor", "maxGpuLength", "fansIncluded", "manufacturer", "model"]
+}
 
 # Pydantic models
 class ComponentData(BaseModel):
@@ -69,6 +78,7 @@ class SearchQuery(BaseModel):
     query: str
     collection: str = "components"
     n_results: int = 5
+    where: Optional[Dict[str, Any]] = None
 
 
 class SearchResponse(BaseModel):
@@ -209,54 +219,86 @@ async def upsert_user_messages(messages: List[UserMessageData]):
         raise HTTPException(status_code=500, detail=f"Error upserting user messages: {str(e)}")
 
 
+def create_component_document(component: ComponentData) -> str:
+    """Create a searchable document string based on component type"""
+    specs = component.specifications or {}
+    component_type = component.type.upper()
+
+    doc_parts = [
+        f"[ID: {component.id}]",
+        f"Component: {component.name}",
+        f"Type: {component.type}",
+        f"Price: ${component.price or 'N/A'}"
+    ]
+
+    # Add manufacturer and model if available
+    manufacturer = specs.get('manufacturer', '')
+    model = specs.get('model', '')
+    if manufacturer or model:
+        doc_parts.append(f"Brand: {manufacturer} {model}".strip())
+
+    # Add type-specific specifications
+    if component_type in COMPONENT_SPECS_MAP:
+        for field_name in COMPONENT_SPECS_MAP[component_type]:
+            if field_name in ['manufacturer', 'model']:  # Already added above
+                continue
+
+            value = specs.get(field_name)
+            if value is not None:
+                doc_parts.append(f"{field_name}: {value}")
+
+    return "\n".join(doc_parts)
+
+
+def create_component_metadata(component: ComponentData) -> Dict[str, Any]:
+    """Create type-specific metadata for ChromaDB filtering"""
+    specs = component.specifications or {}
+    component_type = component.type.upper()
+
+    # Base metadata
+    metadata = {
+        "component_id": component.id,
+        "name": component.name,
+        "type": component_type,
+        "price": component.price or 0.0,
+        "source": "database",
+        "updated_at": datetime.now().isoformat()
+    }
+
+    # Add type-specific fields
+    if component_type in COMPONENT_SPECS_MAP:
+        for field_name in COMPONENT_SPECS_MAP[component_type]:
+            value = specs.get(field_name)
+            if value is not None:
+                if isinstance(value, list):
+                    metadata[field_name] = ", ".join(str(item) for item in value)
+                else:
+                    metadata[field_name] = value
+
+    return metadata
+
 # Components endpoints
 @app.post("/components/upsert")
 async def upsert_components(components: List[ComponentData]):
-    """Add or update components in ChromaDB"""
+    """Add or update components in ChromaDB with type-specific fields"""
     try:
         documents = []
         metadatas = []
         ids = []
 
         for component in components:
-            # Create a document string that includes all relevant information
-            doc_text = f"""
-            [ID: {component.id}]
-            Component: {component.name}
-            Type: {component.type}
-            Manufacturer: {component.manufacturer or 'Unknown'}
-            Model: {component.model or 'Unknown'}
-            Description: {component.description or 'No description'}
-            Price: ${component.price or 'N/A'}
-            Specifications: {json.dumps(component.specifications, indent=2)}
-            """
+            # Skip if component type not supported
+            if component.type.upper() not in COMPONENT_SPECS_MAP:
+                continue
+
+            # Create type-specific document and metadata
+            doc_text = create_component_document(component)
+            metadata = create_component_metadata(component)
 
             documents.append(doc_text)
-
-            # Create metadata for filtering - flatten nested objects
-            metadata = {
-                "component_id": component.id,
-                "name": component.name,
-                "type": component.type,
-                "manufacturer": component.manufacturer or "",
-                "model": component.model or "",
-                "description": component.description or "",
-                "source": "database",
-                "updated_at": datetime.now().isoformat()
-            }
-
-            # Add price if available
-            if component.price is not None:
-                metadata["price"] = float(component.price)
-
-            # Flatten and add specifications
-            flattened_specs = flatten_specifications(component.specifications)
-            metadata.update(flattened_specs)
-
             metadatas.append(metadata)
             ids.append(component.id)
 
-        # Upsert to ChromaDB
         components_collection.upsert(
             documents=documents,
             metadatas=metadatas,
@@ -267,7 +309,6 @@ async def upsert_components(components: List[ComponentData]):
             "message": f"Successfully upserted {len(components)} components",
             "upserted_ids": ids
         }
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error upserting components: {str(e)}")
 
@@ -329,23 +370,26 @@ async def add_admin_knowledge(knowledge: AdminKnowledge):
 # Search endpoint (used by all collections)
 @app.post("/search")
 async def search_knowledge(search_query: SearchQuery):
-    """Search in components, admin knowledge, or user messages collections"""
+    """Search with optional filtering"""
     try:
-        if search_query.collection == "components":
-            collection = components_collection
-        elif search_query.collection == "admin_knowledge":
-            collection = admin_knowledge_collection
-        elif search_query.collection == "user_messages":
-            collection = user_messages_collection
-        else:
+        collection_map = {
+            "components": components_collection,
+            "admin_knowledge": admin_knowledge_collection,
+            "user_messages": user_messages_collection
+        }
+
+        if search_query.collection not in collection_map:
             raise HTTPException(status_code=400, detail="Invalid collection type")
 
+        collection = collection_map[search_query.collection]
+
+        # Use where filter if provided
         results = collection.query(
             query_texts=[search_query.query],
-            n_results=search_query.n_results
+            n_results=search_query.n_results,
+            where=search_query.where
         )
 
-        # Format results
         formatted_results = []
         if results['documents']:
             for i, doc in enumerate(results['documents'][0]):
@@ -360,7 +404,6 @@ async def search_knowledge(search_query: SearchQuery):
             results=formatted_results,
             collection=search_query.collection
         )
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error searching: {str(e)}")
 

@@ -8,6 +8,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -137,7 +138,7 @@ public class AIBuildService {
             String searchQuery = componentSelector.buildComponentSpecificQuery(
                     componentType, requirements, alreadySelected, remainingBudget, iteration);
 
-            List<Map<String, Object>> componentResults = chromaDBService.searchComponents(searchQuery, 2);
+            List<Map<String, Object>> componentResults = chromaDBService.searchComponents(searchQuery, 5);
             List<Map<String, Object>> knowledgeResults = chromaDBService.searchAdminKnowledge(searchQuery, 3);
 
             if (componentResults.isEmpty()) {
@@ -147,8 +148,10 @@ public class AIBuildService {
             String context = buildSelectionContext(componentResults, knowledgeResults);
             String systemPrompt = promptBuilder.buildComponentSelectionPrompt(
                     componentType, context, iteration, previousSelection);
+
+            List<String> remainingComponents = getRemainingComponents(componentType);
             String userMessage = promptBuilder.buildComponentSelectionMessage(
-                    componentType, requirements, alreadySelected, remainingBudget, iteration);
+                    componentType, requirements, alreadySelected, remainingBudget, iteration, remainingComponents);
 
             String response = chatClient.prompt()
                     .system(systemPrompt)
@@ -165,6 +168,21 @@ public class AIBuildService {
             System.err.println("Error selecting " + componentType + ": " + e.getMessage());
             return null;
         }
+    }
+
+    private List<String> getRemainingComponents(String currentComponent) {
+        List<String> remaining = new ArrayList<>();
+        boolean foundCurrent = false;
+
+        for (String component : COMPONENT_ORDER) {
+            if (foundCurrent) {
+                remaining.add(component);
+            }
+            if (component.equals(currentComponent)) {
+                foundCurrent = true;
+            }
+        }
+        return remaining;
     }
 
     private String buildSelectionContext(List<Map<String, Object>> componentResults,

@@ -41,7 +41,6 @@ public class ComponentSelector {
         if (response == null) return null;
 
         String cleanResponse = response.replaceAll("[\"{}]", "").trim();
-
         String idOnly = cleanResponse.replaceAll("[^0-9]", "").trim();
 
         if (!idOnly.isEmpty()) {
@@ -72,27 +71,6 @@ public class ComponentSelector {
             if (specs != null) {
                 for (Object value : specs.values()) {
                     query.append(value).append(" ");
-                }
-            }
-        }
-
-        if (alreadySelected.containsKey("cpu") && componentType.equals("MOTHERBOARD")) {
-            PcComponent cpu = alreadySelected.get("cpu");
-            if (cpu != null && cpu.getSpecifications() != null) {
-                Object socket = cpu.getSpecifications().get("socket");
-                if (socket != null) {
-                    query.append(socket).append(" ");
-                }
-            }
-        }
-        if (alreadySelected.containsKey("motherboard") && componentType.equals("RAM")) {
-            PcComponent motherboard = alreadySelected.get("motherboard");
-            if (motherboard != null && motherboard.getSpecifications() != null) {
-                Object memoryType = motherboard.getSpecifications().get("memoryType");
-                if (memoryType != null) {
-                    query.append(memoryType).append(" ");
-                } else {
-                    query.append("DDR5 ");
                 }
             }
         }

@@ -138,7 +138,7 @@ public class AIBuildService {
             String searchQuery = componentSelector.buildComponentSpecificQuery(
                     componentType, requirements, alreadySelected, remainingBudget, iteration);
 
-            List<Map<String, Object>> componentResults = chromaDBService.searchComponents(searchQuery, 5);
+            List<Map<String, Object>> componentResults = chromaDBService.searchComponents(searchQuery, 5, componentType);
             List<Map<String, Object>> knowledgeResults = chromaDBService.searchAdminKnowledge(searchQuery, 3);
 
             if (componentResults.isEmpty()) {

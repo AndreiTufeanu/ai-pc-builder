@@ -35,8 +35,9 @@ public class PromptBuilder {
             4. **CRITICALLY ENSURE COMPATIBILITY with already selected components using these rules:**
             %s
             5. You MUST return ONLY the component ID (the number in [ID: ...]) from the list.
-            6. Do NOT return the component name or any other text.
-            7. **CRITICAL: Your response must contain ONLY the component ID, NO other text, NO explanations, NO reasoning.**
+            6. **NEVER return multiple component IDs or list multiple options.**
+            7. Do NOT return the component name or any other text.
+            8. **CRITICAL: Your response must contain ONLY the component ID, NO other text, NO explanations, NO reasoning.**
             
             ===== AVAILABLE %s OPTIONS =====
             %s
@@ -65,8 +66,9 @@ public class PromptBuilder {
             %s
             4. Consider the budget feedback provided in the requirements.
             5. You MUST return ONLY the component ID (the number in [ID: ...]) from the list.
-            6. Do NOT return the component name or any other text.
-            7. **CRITICAL: Your response must contain ONLY the component ID, NO other text, NO explanations, NO reasoning.**
+            6. **NEVER return multiple component IDs or list multiple options.**
+            7. Do NOT return the component name or any other text.
+            8. **CRITICAL: Your response must contain ONLY the component ID, NO other text, NO explanations, NO reasoning.**
             
             %s
             
@@ -84,7 +86,7 @@ public class PromptBuilder {
         return switch (componentType.toUpperCase()) {
             case "MOTHERBOARD" -> """
                     MOTHERBOARD COMPATIBILITY RULES:
-                    - CPU Socket: Must match the selected CPU socket exactly
+                    - CPU Socket: Must match the selected CPU socket exactly (LGA1851, LGA1700, AM5, AM4)
                     - Form Factor: Must fit in the selected case (E-ATX, ATX, mATX, ITX)
                     """;
             case "CPU" -> """
@@ -178,12 +180,26 @@ public class PromptBuilder {
 
         // Add compatibility constraints
         if (!alreadySelected.isEmpty()) {
-            message.append("\nAlready selected components (ensure compatibility):\n");
+            message.append("\nALREADY SELECTED COMPONENTS (ENSURE COMPATIBILITY WITH THESE SPECS):\n");
             for (Map.Entry<String, PcComponent> entry : alreadySelected.entrySet()) {
                 if (entry.getValue() != null) {
-                    message.append("  - ").append(entry.getKey()).append(": [ID: ").append(entry.getValue().getId())
-                            .append("] ").append(entry.getValue().getName())
-                            .append(" ($").append(entry.getValue().getPrice()).append(")\n");
+                    PcComponent component = entry.getValue();
+                    message.append("  - ").append(entry.getKey()).append(": [ID: ").append(component.getId())
+                            .append("] ").append(component.getName())
+                            .append(" ($").append(component.getPrice()).append(")\n");
+
+                    // Add critical specifications for compatibility
+                    Map<String, Object> specs = component.getSpecifications();
+                    if (specs != null && !specs.isEmpty()) {
+                        message.append("Specifications:\n");
+
+                        for (Map.Entry<String, Object> spec : specs.entrySet()) {
+                            if (spec.getValue() != null) {
+                                message.append("      * ").append(spec.getKey()).append(": ").append(spec.getValue()).append("\n");
+                            }
+                        }
+                    }
+                    message.append("\n");
                 }
             }
         }

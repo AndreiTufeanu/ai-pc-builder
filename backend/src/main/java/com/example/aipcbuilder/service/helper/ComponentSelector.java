@@ -5,6 +5,7 @@ import com.example.aipcbuilder.repository.PcComponentRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Component
@@ -57,24 +58,77 @@ public class ComponentSelector {
                                               Map<String, PcComponent> alreadySelected,
                                               double remainingBudget,
                                               int iteration) {
-        StringBuilder query = new StringBuilder();
-        query.append(componentType).append(" ");
-
-        if (iteration > 1) {
-            query.append("budget cost-effective affordable ");
-        }
+        StringBuilder query = new StringBuilder(componentType).append(" ");
+        addCompatibilityKeywords(query, componentType, alreadySelected);
+        if (iteration > 1) query.append("budget cost-effective ");
         query.append("Budget $").append(remainingBudget).append(" ");
 
         if (requirements != null && requirements.containsKey(componentType.toUpperCase())) {
-            Map<String, Object> componentReqs = requirements.get(componentType.toUpperCase());
-            Map<String, Object> specs = (Map<String, Object>) componentReqs.get("specifications");
-            if (specs != null) {
-                for (Object value : specs.values()) {
-                    query.append(value).append(" ");
-                }
-            }
+            Map<String, Object> specs = (Map<String, Object>) requirements.get(componentType.toUpperCase()).get("specifications");
+            if (specs != null) specs.values().stream().filter(Objects::nonNull).forEach(v -> query.append(v).append(" "));
         }
 
         return query.toString().trim();
+    }
+
+    private void addCompatibilityKeywords(StringBuilder query, String componentType, Map<String, PcComponent> alreadySelected) {
+        Map<String, Integer> sizeRank = Map.of("E-ATX", 4, "ATX", 3, "MATX", 2, "ITX", 1);
+        Map<String, String> ramTypes = Map.of("AM4", "DDR4", "AM5", "DDR5", "LGA1851", "DDR5", "LGA1700", "DDR4 DDR5");
+
+        switch (componentType.toUpperCase()) {
+            case "PSU":
+                if (alreadySelected.containsKey("gpu")) {
+                    String connectors = getSpec(alreadySelected.get("gpu"), "powerConnectors");
+                    String gpuTdp = getSpec(alreadySelected.get("gpu"), "tdp");
+                    String cpuTdp = getSpec(alreadySelected.get("cpu"), "tdp");
+                    if (connectors != null) query.append(connectors).append(" ");
+                    if (gpuTdp != null && cpuTdp != null) query.append(estimateTotalPower(gpuTdp, cpuTdp)).append("W ");
+                }
+                break;
+            case "RAM":
+                String socket = getSpec(alreadySelected.get("cpu"), "socket");
+                if (socket != null && ramTypes.containsKey(socket.toUpperCase())) query.append(ramTypes.get(socket.toUpperCase())).append(" ");
+                break;
+            case "MOTHERBOARD":
+                if ((socket = getSpec(alreadySelected.get("cpu"), "socket")) != null) query.append(socket).append(" ");
+                break;
+            case "CASE":
+                String caseFormFactor = getRequiredCaseFormFactor(alreadySelected, sizeRank);
+                if (caseFormFactor != null) query.append(caseFormFactor).append(" ");
+                if (alreadySelected.containsKey("gpu")) query.append("large ");
+                break;
+        }
+    }
+
+    private String getRequiredCaseFormFactor(Map<String, PcComponent> alreadySelected, Map<String, Integer> sizeRank) {
+        String mobo = getSpec(alreadySelected.get("motherboard"), "formFactor");
+        String psu = getSpec(alreadySelected.get("psu"), "formFactor");
+
+        if (mobo != null && psu != null) {
+            int moboRank = sizeRank.getOrDefault(mobo.toUpperCase(), 2);
+            int psuRank = psu.equalsIgnoreCase("ATX") ? 2 : 1;
+            int requiredRank = Math.max(moboRank, psuRank);
+
+            return switch (requiredRank) {
+                case 4 -> "E-ATX"; case 3 -> "ATX"; case 2 -> "mATX"; case 1 -> "ITX"; default -> "ATX";
+            };
+        }
+        return mobo;
+    }
+
+    private String getSpec(PcComponent component, String specName) {
+        if (component == null || component.getSpecifications() == null) return null;
+        Object spec = component.getSpecifications().get(specName);
+        return spec != null ? spec.toString() : null;
+    }
+
+    private int estimateTotalPower(String gpuTdp, String cpuTdp) {
+        try {
+            int gpuW = Integer.parseInt(gpuTdp.replaceAll("[^0-9]", ""));
+            int cpuW = Integer.parseInt(cpuTdp.replaceAll("[^0-9]", ""));
+            return (int)((gpuW + cpuW + 150) * 1.3);
+        } catch (NumberFormatException e) {
+            return 750;
+        }
     }
 }

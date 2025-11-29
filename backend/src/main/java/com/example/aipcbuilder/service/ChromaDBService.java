@@ -4,6 +4,7 @@ import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.service.helper.ChromaDataHelper;
 import com.example.aipcbuilder.utils.HttpHelper;
+import io.micrometer.common.lang.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -89,25 +90,30 @@ public class ChromaDBService {
     }
 
     // Search methods
-    public List<Map<String, Object>> searchComponents(String query, int nResults) {
-        return searchCollection("components", query, nResults);
+    public List<Map<String, Object>> searchComponents(String query, int nResults, @Nullable String componentType) {
+        return searchCollection("components", query, nResults, componentType);
     }
 
     public List<Map<String, Object>> searchAdminKnowledge(String query, int nResults) {
-        return searchCollection("admin_knowledge", query, nResults);
+        return searchCollection("admin_knowledge", query, nResults, null);
     }
 
     public List<Map<String, Object>> searchUserMessages(String query, int nResults) {
-        return searchCollection("user_messages", query, nResults);
+        return searchCollection("user_messages", query, nResults, null);
     }
 
-    private List<Map<String, Object>> searchCollection(String collection, String query, int nResults) {
+    private List<Map<String, Object>> searchCollection(String collection, String query, int nResults, @Nullable String componentType) {
         try {
-            Map<String, Object> searchRequest = Map.of(
+            Map<String, Object> searchRequest = new HashMap<>(Map.of(
                     "query", query,
                     "collection", collection,
                     "n_results", nResults
-            );
+            ));
+
+            if (componentType != null && !componentType.trim().isEmpty()) {
+                Map<String, Object> whereFilter = Map.of("component_type", componentType.toUpperCase());
+                searchRequest.put("where", whereFilter);
+            }
 
             HttpEntity<Map<String, Object>> request = httpHelper.createJsonRequest(searchRequest);
 

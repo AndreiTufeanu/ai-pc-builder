@@ -259,7 +259,7 @@ def create_component_metadata(component: ComponentData) -> Dict[str, Any]:
     metadata = {
         "component_id": component.id,
         "name": component.name,
-        "type": component_type,
+        "component_type": component_type,
         "price": component.price or 0.0,
         "source": "database",
         "updated_at": datetime.now().isoformat()

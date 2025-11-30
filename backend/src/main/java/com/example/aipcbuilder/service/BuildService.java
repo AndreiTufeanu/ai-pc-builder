@@ -4,6 +4,7 @@ import com.example.aipcbuilder.dto.BuildWithComponentsDTO;
 import com.example.aipcbuilder.model.Build;
 import com.example.aipcbuilder.repository.BuildRepository;
 import com.example.aipcbuilder.repository.PcComponentRepository;
+import com.example.aipcbuilder.service.helper.BuildGenerationManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,18 +17,18 @@ import java.util.stream.Collectors;
 public class BuildService {
 
     private final BuildRepository buildRepository;
-    private final BuildGenerationService buildGenerationService;
+    private final BuildGenerationManager buildGenerationManager;
     private final PcComponentRepository pcComponentRepository;
 
-    public BuildService(BuildRepository buildRepository, BuildGenerationService buildGenerationService, PcComponentRepository pcComponentRepository) {
+    public BuildService(BuildRepository buildRepository, BuildGenerationManager buildGenerationManager, PcComponentRepository pcComponentRepository) {
         this.buildRepository = buildRepository;
-        this.buildGenerationService = buildGenerationService;
+        this.buildGenerationManager = buildGenerationManager;
         this.pcComponentRepository = pcComponentRepository;
     }
 
     public Build generateAndSaveBuild(Build build, Map<String, Map<String, Object>> requirements) {
         // Generate components based on requirements (requirements are passed separately)
-        Build generatedBuild = buildGenerationService.generateBuild(build, requirements);
+        Build generatedBuild = buildGenerationManager.generateBuild(build, requirements);
 
         // Save the complete build with component IDs (without storing requirements)
         return buildRepository.save(generatedBuild);

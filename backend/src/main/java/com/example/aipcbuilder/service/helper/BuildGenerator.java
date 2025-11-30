@@ -1,8 +1,9 @@
-package com.example.aipcbuilder.service;
+package com.example.aipcbuilder.service.helper;
 
 import com.example.aipcbuilder.dto.AIBuildRequest;
 import com.example.aipcbuilder.dto.AIBuildResponse;
 import com.example.aipcbuilder.model.PcComponent;
+import com.example.aipcbuilder.service.ChromaDBService;
 import com.example.aipcbuilder.service.helper.*;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class AIBuildService {
+public class BuildGenerator {
 
     private final ChatClient chatClient;
     private final ChromaDBService chromaDBService;
@@ -26,7 +27,7 @@ public class AIBuildService {
     // Component selection order
     private final String[] COMPONENT_ORDER = {"CPU", "MOTHERBOARD", "RAM", "GPU", "STORAGE", "PSU", "CASE"};
 
-    public AIBuildService(ChatModel chatModel, ChromaDBService chromaDBService,
+    public BuildGenerator(ChatModel chatModel, ChromaDBService chromaDBService,
                           ContextBuilderHelper contextBuilder, PromptBuilder promptBuilder,
                           ComponentSelector componentSelector, BuildResultMapper buildResultMapper) {
         this.chatClient = ChatClient.create(chatModel);

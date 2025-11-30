@@ -1,5 +1,5 @@
 // BuildGenerationService.java
-package com.example.aipcbuilder.service;
+package com.example.aipcbuilder.service.helper;
 
 import com.example.aipcbuilder.dto.AIBuildRequest;
 import com.example.aipcbuilder.dto.AIBuildResponse;
@@ -13,14 +13,14 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class BuildGenerationService {
+public class BuildGenerationManager {
 
     private final PcComponentRepository componentRepository;
-    private final AIBuildService aiBuildService;
+    private final BuildGenerator buildGenerator;
 
-    public BuildGenerationService(PcComponentRepository componentRepository, AIBuildService aiBuildService) {
+    public BuildGenerationManager(PcComponentRepository componentRepository, BuildGenerator buildGenerator) {
         this.componentRepository = componentRepository;
-        this.aiBuildService = aiBuildService;
+        this.buildGenerator = buildGenerator;
     }
 
     /**
@@ -36,7 +36,7 @@ public class BuildGenerationService {
                     requirements
             );
 
-            AIBuildResponse aiResponse = aiBuildService.generateAIBuild(aiRequest);
+            AIBuildResponse aiResponse = buildGenerator.generateAIBuild(aiRequest);
 
             if (aiResponse.isSuccess() && aiResponse.getComponentIds() != null) {
                 // Set the component IDs from AI response

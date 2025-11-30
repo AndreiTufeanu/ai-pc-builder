@@ -2,35 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
-
-export interface User {
-  id: number; // Now we'll get this from backend
-  username: string;
-  roles: string[];
-}
-
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  userId: number; // Add this
-  username: string;
-  roles: string[];
-  message: string;
-}
-
-export interface SignupRequest {
-  username: string;
-  password: string;
-  confirmPassword: string;
-}
-
-export interface SignupResponse {
-  success: boolean;
-  message: string;
-}
+import { User, LoginRequest, LoginResponse, SignupRequest, SignupResponse } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
@@ -60,7 +32,7 @@ export class AuthService {
         tap(response => {
           if (response.username && response.roles && response.userId) {
             const user: User = {
-              id: response.userId, // Now we get this from backend
+              id: response.userId,
               username: response.username,
               roles: response.roles
             };
@@ -68,8 +40,6 @@ export class AuthService {
             this.currentUser.set(user);
             this.isAuthenticated.set(true);
             localStorage.setItem('currentUser', JSON.stringify(user));
-            
-            console.log('User logged in with ID:', response.userId);
           }
         })
       );
@@ -96,7 +66,6 @@ export class AuthService {
     return user ? user.roles.includes('ROLE_USER') : false;
   }
 
-  // Helper method to get current user ID
   getCurrentUserId(): number | null {
     const user = this.currentUser();
     return user ? user.id : null;

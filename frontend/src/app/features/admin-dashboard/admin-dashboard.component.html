@@ -7,268 +7,221 @@
 
   <!-- Tab Navigation -->
   <nav class="tab-nav">
-    <button 
-      class="tab-button" 
-      [class.active]="activeTab() === 'components'"
-      (click)="setActiveTab('components')">
+    <button class="tab-button" [class.active]="activeTab() === 'components'" (click)="setActiveTab('components')">
       🖥️ Manage Components
     </button>
-    <button 
-      class="tab-button" 
-      [class.active]="activeTab() === 'chat'"
-      (click)="setActiveTab('chat')">
+    <button class="tab-button" [class.active]="activeTab() === 'chat'" (click)="setActiveTab('chat')">
       🤖 AI Training Chat
     </button>
   </nav>
 
   <!-- Components Tab -->
   @if (activeTab() === 'components') {
-    <div class="tab-content">
-      <div class="section-header">
-        <h2>PC Components Management</h2>
-        <button class="btn btn-primary" (click)="openAddComponentForm()">
-          ➕ Add New Component
-        </button>
-      </div>
+  <div class="tab-content">
+    <div class="section-header">
+      <h2>PC Components Management</h2>
+      <button class="btn btn-primary" (click)="openAddComponentForm()">
+        ➕ Add New Component
+      </button>
+    </div>
 
     <!-- Component Form -->
     @if (showComponentForm()) {
-      <div class="component-form-overlay">
-        <div class="component-form">
-          <h3>{{ editingComponent() ? 'Edit Component' : 'Add New Component' }}</h3>
-          
-          <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label">Name *</label>
-              <input 
-                type="text" 
-                class="form-input"
-                [(ngModel)]="componentForm.name"
-                placeholder="Component name"
-                required>
-            </div>
+    <div class="component-form-overlay">
+      <div class="component-form">
+        <h3>{{ editingComponent() ? 'Edit Component' : 'Add New Component' }}</h3>
 
-            <div class="form-group">
-              <label class="form-label">Type *</label>
-              <select class="form-input" [(ngModel)]="componentForm.type" (change)="onTypeChange()">
-                <option value="CPU">CPU</option>
-                <option value="GPU">GPU</option>
-                <option value="PSU">PSU</option>
-                <option value="RAM">RAM</option>
-                <option value="STORAGE">Storage</option>
-                <option value="MOTHERBOARD">Motherboard</option>
-                <option value="CASE">Case</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Price ($)</label>
-              <input 
-                type="number" 
-                class="form-input"
-                [(ngModel)]="componentForm.price"
-                placeholder="0.00"
-                step="0.01">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Manufacturer</label>
-              <input 
-                type="text" 
-                class="form-input"
-                [(ngModel)]="componentForm.manufacturer"
-                placeholder="Manufacturer name">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Model</label>
-              <input 
-                type="text" 
-                class="form-input"
-                [(ngModel)]="componentForm.model"
-                placeholder="Model number/name">
-            </div>
-
-            <div class="form-group full-width">
-              <label class="form-label">Description</label>
-              <textarea 
-                class="form-input"
-                [(ngModel)]="componentForm.description"
-                placeholder="Component description"
-                rows="3"></textarea>
-            </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Name *</label>
+            <input type="text" class="form-input" [(ngModel)]="componentForm.name" placeholder="Component name"
+              required>
           </div>
 
-          <!-- Specifications Section -->
-          @if (currentSpecs().length > 0) {
-            <div class="specifications-section">
-              <h4>Specifications</h4>
-              <div class="specs-grid">
-                @for (spec of currentSpecs(); track spec.name) {
-                  <div class="form-group">
-                    <label class="form-label">
-                      {{ spec.label }}
-                      @if (spec.required) {
-                        <span class="required">*</span>
-                      }
-                    </label>
-                    
-                    @switch (spec.type) {
-                      @case ('text') {
-                        <input 
-                          type="text" 
-                          class="form-input"
-                          [(ngModel)]="componentForm.specifications[spec.name]"
-                          [name]="spec.name"
-                          [required]="spec.required">
-                      }
-                      @case ('number') {
-                        <input 
-                          type="number" 
-                          class="form-input"
-                          [(ngModel)]="componentForm.specifications[spec.name]"
-                          [name]="spec.name"
-                          [step]="spec.step || '1'"
-                          [required]="spec.required">
-                      }
-                      @case ('select') {
-                        <select 
-                          class="form-input"
-                          [(ngModel)]="componentForm.specifications[spec.name]"
-                          [name]="spec.name"
-                          [required]="spec.required">
-                          <option value="">Select {{ spec.label }}</option>
-                          @for (option of spec.options; track option) {
-                            <option [value]="option">{{ option }}</option>
-                          }
-                        </select>
-                      }
-                      @case ('checkbox-group') {
-                        <div class="checkbox-group">
-                          @for (option of spec.options; track option) {
-                            <label class="checkbox-label">
-                              <input 
-                                type="checkbox"
-                                [value]="option"
-                                [checked]="componentForm.specifications[spec.name]?.includes(option)"
-                                (change)="onCheckboxChange(spec.name, option, $event)">
-                              {{ option }}
-                            </label>
-                          }
-                        </div>
-                      }
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-          }
+          <div class="form-group">
+            <label class="form-label">Type *</label>
+            <select class="form-input" [(ngModel)]="componentForm.type" (change)="onTypeChange()">
+              <option value="CPU">CPU</option>
+              <option value="GPU">GPU</option>
+              <option value="PSU">PSU</option>
+              <option value="RAM">RAM</option>
+              <option value="STORAGE">Storage</option>
+              <option value="MOTHERBOARD">Motherboard</option>
+              <option value="CASE">Case</option>
+            </select>
+          </div>
 
-          <div class="form-actions">
-            <button class="btn btn-secondary" (click)="cancelForm()">Cancel</button>
-            <button class="btn btn-primary" (click)="saveComponent()">
-              {{ editingComponent() ? 'Update' : 'Add' }} Component
-            </button>
+          <div class="form-group">
+            <label class="form-label">Price ($)</label>
+            <input type="number" class="form-input" [(ngModel)]="componentForm.price" placeholder="0.00" step="0.01">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Manufacturer</label>
+            <input type="text" class="form-input" [(ngModel)]="componentForm.manufacturer"
+              placeholder="Manufacturer name">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Model</label>
+            <input type="text" class="form-input" [(ngModel)]="componentForm.model" placeholder="Model number/name">
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" [(ngModel)]="componentForm.description" placeholder="Component description"
+              rows="3"></textarea>
           </div>
         </div>
+
+        <!-- Specifications Section -->
+        @if (currentSpecs().length > 0) {
+        <div class="specifications-section">
+          <h4>Specifications</h4>
+          <div class="specs-grid">
+            @for (spec of currentSpecs(); track spec.name) {
+            <div class="form-group">
+              <label class="form-label">
+                {{ spec.label }}
+                @if (spec.required) {
+                <span class="required">*</span>
+                }
+              </label>
+
+              @switch (spec.type) {
+              @case ('text') {
+              <input type="text" class="form-input" [(ngModel)]="componentForm.specifications[spec.name]"
+                [name]="spec.name" [required]="spec.required">
+              }
+              @case ('number') {
+              <input type="number" class="form-input" [(ngModel)]="componentForm.specifications[spec.name]"
+                [name]="spec.name" [step]="spec.step || '1'" [required]="spec.required">
+              }
+              @case ('select') {
+              <select class="form-input" [(ngModel)]="componentForm.specifications[spec.name]" [name]="spec.name"
+                [required]="spec.required">
+                <option value="">Select {{ spec.label }}</option>
+                @for (option of spec.options; track option) {
+                <option [value]="option">{{ option }}</option>
+                }
+              </select>
+              }
+              @case ('checkbox-group') {
+              <div class="checkbox-group">
+                @for (option of spec.options; track option) {
+                <label class="checkbox-label">
+                  <input type="checkbox" [value]="option"
+                    [checked]="componentForm.specifications[spec.name]?.includes(option)"
+                    (change)="onCheckboxChange(spec.name, option, $event)">
+                  {{ option }}
+                </label>
+                }
+              </div>
+              }
+              }
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <div class="form-actions">
+          <button class="btn btn-secondary" (click)="cancelForm()">Cancel</button>
+          <button class="btn btn-primary" (click)="saveComponent()">
+            {{ editingComponent() ? 'Update' : 'Add' }} Component
+          </button>
+        </div>
       </div>
+    </div>
     }
 
     <!-- Components List -->
     <div class="components-grid">
       @if (isLoading()) {
-        <div class="loading">Loading components...</div>
+      <div class="loading">Loading components...</div>
       } @else {
-        @for (component of components(); track component.id) {
-          <div class="component-card">
-            <div class="component-header">
-              <h4>{{ component.name }}</h4>
-              <span class="component-type">{{ component.type }}</span>
-            </div>
-            
-            <div class="component-details">
-              @if (component.manufacturer) {
-                <div class="detail">
-                  <strong>Manufacturer:</strong> {{ component.manufacturer }}
-                </div>
-              }
-              @if (component.model) {
-                <div class="detail">
-                  <strong>Model:</strong> {{ component.model }}
-                </div>
-              }
-              @if (component.price) {
-                <div class="detail">
-                  <strong>Price:</strong> ${{ component.price }}
-                </div>
-              }
-              @if (component.description) {
-                <div class="detail">
-                  <strong>Description:</strong> {{ component.description }}
-                </div>
-              }
-              <div class="component-specs">
-                @for (spec of getImportantSpecs(component); track spec.key) {
-                  <div class="spec-item">
-                    <strong>{{ spec.label }}:</strong> {{ spec.value }}
-                  </div>
-                }
-              </div>
-            </div>
-
-            <div class="component-actions">
-              <button 
-                class="btn btn-outline btn-sm"
-                (click)="openEditComponent(component)">
-                ✏️ Edit
-              </button>
-              <button 
-                class="btn btn-danger btn-sm"
-                (click)="deleteComponent(component)">
-                🗑️ Delete
-              </button>
-            </div>
-          </div>
-        }
-      }
-    </div>
-    </div>
-  }
-
-    <!-- Chat Tab -->
-    @if (activeTab() === 'chat') {
-    <div class="tab-content">
-        <div class="section-header">
-        <h2>AI Training Chat</h2>
-        <p>Train the AI model with component knowledge and compatibility rules</p>
+      @for (component of components(); track component.id) {
+      <div class="component-card">
+        <div class="component-header">
+          <h4>{{ component.name }}</h4>
+          <span class="component-type">{{ component.type }}</span>
         </div>
 
-        <div class="chat-container">
-        <div class="chat-messages">
-            @for (message of chatMessages(); track $index) {
-            <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
-                <div class="message-content">
-                {{ message.content }}
-                </div>
-                <div class="message-role">
-                {{ message.role === 'user' ? 'You' : 'AI Assistant' }}
-                </div>
+        <div class="component-details">
+          @if (component.manufacturer) {
+          <div class="detail">
+            <strong>Manufacturer:</strong> {{ component.manufacturer }}
+          </div>
+          }
+          @if (component.model) {
+          <div class="detail">
+            <strong>Model:</strong> {{ component.model }}
+          </div>
+          }
+          @if (component.price) {
+          <div class="detail">
+            <strong>Price:</strong> ${{ component.price }}
+          </div>
+          }
+          @if (component.description) {
+          <div class="detail">
+            <strong>Description:</strong> {{ component.description }}
+          </div>
+          }
+          <div class="component-specs">
+            @for (spec of getImportantSpecs(component); track spec.key) {
+            <div class="spec-item">
+              <strong>{{ spec.label }}:</strong> {{ spec.value }}
             </div>
             }
+          </div>
         </div>
 
-        <div class="chat-input-container">
-            <input
-            type="text"
-            class="chat-input"
-            [(ngModel)]="newMessage"
-            placeholder="Enter training information about PC components..."
-            (keyup.enter)="sendMessage()">
-            <button class="btn btn-primary" (click)="sendMessage()" [disabled]="!newMessage.trim()">
-            Send
-            </button>
+        <div class="component-actions">
+          <button class="btn btn-outline btn-sm" (click)="openEditComponent(component)">
+            ✏️ Edit
+          </button>
+          <button class="btn btn-danger btn-sm" (click)="deleteComponent(component)">
+            🗑️ Delete
+          </button>
         </div>
-        </div>
+      </div>
+      }
+      }
     </div>
-    }
+  </div>
+  }
+
+  <!-- Chat Tab -->
+  @if (activeTab() === 'chat') {
+  <div class="tab-content">
+    <div class="section-header">
+      <h2>AI Training Chat</h2>
+      <p>Train the AI model with component knowledge and compatibility rules</p>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-messages">
+        @for (message of chatMessages(); track $index) {
+        <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
+          <div class="message-content">
+            {{ message.content }}
+          </div>
+          <div class="message-role">
+            {{ message.role === 'user' ? 'You' : 'AI Assistant' }}
+          </div>
+        </div>
+        }
+      </div>
+
+      <div class="chat-input-container">
+        <input type="text" class="chat-input" [(ngModel)]="newMessage"
+          placeholder="Enter training information about PC components..." (keyup.enter)="sendMessage()">
+        <button class="btn btn-primary" (click)="sendMessage()" [disabled]="!newMessage.trim()">
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+  }
 </div>

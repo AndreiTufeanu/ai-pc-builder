@@ -1,9 +1,14 @@
 import { Component, signal, ViewChildren, QueryList, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { Build, BuildRequest, BuildWithComponents, ComponentService, ComponentType, PcComponent, type ComponentSpec } from '../../core/services/component.service';
+import { Build } from '../../core/models/component.model';
+import { BuildRequest } from '../../core/models/component.model';
+import { BuildWithComponents } from '../../core/models/component.model';
+import { PcComponent } from '../../core/models/component.model';
+import { ComponentService } from '../../core/services/component.service';
+import { ComponentSpec } from '../../core/models/component.model';
+import { ComponentType } from '../../core/models/component.model';
 import { ChatService } from '../../core/services/chat.service';
 import { Subscription } from 'rxjs';
 
@@ -32,11 +37,9 @@ export class UserDashboardComponent implements AfterViewChecked {
   isChatLoading = false;
   private chatSubscription?: Subscription;
 
-  generatedBuild = signal<PcComponent[] | null>(null);
   isGeneratingBuild = signal(false);
   buildName = signal('My PC Build');
   buildDescription = signal('');
-  buildMessage = signal('');
 
   // Guided build functionality (unchanged)
   currentStep = signal<ComponentType | 'summary'>(ComponentType.CPU);
@@ -46,7 +49,6 @@ export class UserDashboardComponent implements AfterViewChecked {
   currentRequirements: BuildRequirement = { type: ComponentType.CPU, specifications: {} };
 
   constructor(
-    private router: Router,
     public authService: AuthService,
     private componentService: ComponentService,
     private chatService: ChatService
@@ -386,32 +388,5 @@ export class UserDashboardComponent implements AfterViewChecked {
     this.chatMessages.set([
       { role: 'assistant', content: 'Hello! I\'m here to help you build your perfect PC. Ask me anything about components, compatibility, or budget recommendations!' }
     ]);
-  }
-
-  goBackToGuidedBuild(): void {
-    this.generatedBuild.set(null);
-    this.buildMessage.set('');
-  }
-
-  addBuildToList(): void {
-    const build = this.generatedBuild();
-    if (build) {
-      console.log('Adding build to list:', build);
-      // TODO: Implement actual save functionality later
-      alert('Build saved to your list! (This will be implemented later)');
-    }
-  }
-
-  getImportantSpecs(component: PcComponent): { key: string; label: string; value: any }[] {
-    const specs = this.componentService.getSpecsForType(component.type);
-    const importantSpecs = specs.filter(spec =>
-      ['socket', 'memory', 'wattage', 'capacity', 'formFactor', 'cores', 'speed'].includes(spec.name)
-    );
-
-    return importantSpecs.map(spec => ({
-      key: spec.name,
-      label: spec.label,
-      value: component.specifications[spec.name]
-    })).filter(spec => spec.value && spec.value !== '');
   }
 }

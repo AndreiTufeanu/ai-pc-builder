@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { AuthService, SignupRequest } from '../../../core/services/auth.service';
-// import { AuthService, SignupRequest } from '../../services/auth.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { SignupRequest } from '../../../core/models/user.model';
 import { CommonModule } from '@angular/common';
 
 @Component({

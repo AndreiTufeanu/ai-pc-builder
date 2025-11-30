@@ -1,7 +1,8 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ComponentService, PcComponent, ComponentType } from '../../core/services/component.service';
+import { PcComponent, ComponentType } from '../../core/models/component.model';
+import { ComponentService } from '../../core/services/component.service';
 import { ChatService } from '../../core/services/chat.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Subscription } from 'rxjs';
@@ -170,81 +171,81 @@ export class AdminDashboardComponent {
   }
 
   saveComponent(): void {
-  // Basic validation
-  if (!this.componentForm.name.trim()) {
-    alert('Component name is required');
-    return;
-  }
+    // Basic validation
+    if (!this.componentForm.name.trim()) {
+      alert('Component name is required');
+      return;
+    }
 
-  // Create a copy of specifications with units applied
-  const specificationsWithUnits: { [key: string]: any } = {};
+    // Create a copy of specifications with units applied
+    const specificationsWithUnits: { [key: string]: any } = {};
 
-  for (const spec of this.currentSpecs()) {
-    const value = this.componentForm.specifications[spec.name];
-    
-    if (value !== '' && value !== null && value !== undefined) {
-      if (Array.isArray(value)) {
-        // For checkbox groups, store as array
-        specificationsWithUnits[spec.name] = value;
-      } else if (spec.unit && spec.type === 'number') {
-        // For numbers with units, store as string with unit
-        specificationsWithUnits[spec.name] = `${value} ${spec.unit}`;
-      } else {
-        // For other types, store as is
-        specificationsWithUnits[spec.name] = value;
+    for (const spec of this.currentSpecs()) {
+      const value = this.componentForm.specifications[spec.name];
+
+      if (value !== '' && value !== null && value !== undefined) {
+        if (Array.isArray(value)) {
+          // For checkbox groups, store as array
+          specificationsWithUnits[spec.name] = value;
+        } else if (spec.unit && spec.type === 'number') {
+          // For numbers with units, store as string with unit
+          specificationsWithUnits[spec.name] = `${value} ${spec.unit}`;
+        } else {
+          // For other types, store as is
+          specificationsWithUnits[spec.name] = value;
+        }
       }
     }
+
+    // Validate required specifications
+    const missingRequired = this.currentSpecs().filter(spec =>
+      spec.required && (!specificationsWithUnits[spec.name] ||
+        (Array.isArray(specificationsWithUnits[spec.name]) &&
+          specificationsWithUnits[spec.name].length === 0))
+    );
+
+    if (missingRequired.length > 0) {
+      alert(`Please fill in all required specifications: ${missingRequired.map(s => s.label).join(', ')}`);
+      return;
+    }
+
+    const componentData: PcComponent = {
+      name: this.componentForm.name,
+      type: this.componentForm.type,
+      description: this.componentForm.description || undefined,
+      price: this.componentForm.price ? parseFloat(this.componentForm.price) : undefined,
+      manufacturer: this.componentForm.manufacturer || undefined,
+      model: this.componentForm.model || undefined,
+      specifications: specificationsWithUnits  // Use the formatted specifications with units
+    };
+
+    if (this.editingComponent()) {
+      // Update existing component
+      this.componentService.updateComponent(this.editingComponent()!.id!, componentData).subscribe({
+        next: () => {
+          this.loadComponents();
+          this.showComponentForm.set(false);
+          this.editingComponent.set(null);
+        },
+        error: (error) => {
+          console.error('Error updating component:', error);
+          alert('Error updating component');
+        }
+      });
+    } else {
+      // Add new component
+      this.componentService.createComponent(componentData).subscribe({
+        next: () => {
+          this.loadComponents();
+          this.showComponentForm.set(false);
+        },
+        error: (error) => {
+          console.error('Error creating component:', error);
+          alert('Error creating component');
+        }
+      });
+    }
   }
-
-  // Validate required specifications
-  const missingRequired = this.currentSpecs().filter(spec =>
-    spec.required && (!specificationsWithUnits[spec.name] ||
-      (Array.isArray(specificationsWithUnits[spec.name]) &&
-        specificationsWithUnits[spec.name].length === 0))
-  );
-
-  if (missingRequired.length > 0) {
-    alert(`Please fill in all required specifications: ${missingRequired.map(s => s.label).join(', ')}`);
-    return;
-  }
-
-  const componentData: PcComponent = {
-    name: this.componentForm.name,
-    type: this.componentForm.type,
-    description: this.componentForm.description || undefined,
-    price: this.componentForm.price ? parseFloat(this.componentForm.price) : undefined,
-    manufacturer: this.componentForm.manufacturer || undefined,
-    model: this.componentForm.model || undefined,
-    specifications: specificationsWithUnits  // Use the formatted specifications with units
-  };
-
-  if (this.editingComponent()) {
-    // Update existing component
-    this.componentService.updateComponent(this.editingComponent()!.id!, componentData).subscribe({
-      next: () => {
-        this.loadComponents();
-        this.showComponentForm.set(false);
-        this.editingComponent.set(null);
-      },
-      error: (error) => {
-        console.error('Error updating component:', error);
-        alert('Error updating component');
-      }
-    });
-  } else {
-    // Add new component
-    this.componentService.createComponent(componentData).subscribe({
-      next: () => {
-        this.loadComponents();
-        this.showComponentForm.set(false);
-      },
-      error: (error) => {
-        console.error('Error creating component:', error);
-        alert('Error creating component');
-      }
-    });
-  }
-}
 
   deleteComponent(component: PcComponent): void {
     if (confirm(`Are you sure you want to delete ${component.name}?`)) {

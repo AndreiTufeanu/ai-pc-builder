@@ -1,6 +1,7 @@
 package com.example.aipcbuilder.service;
 
 import com.example.aipcbuilder.service.helper.ContextBuilderHelper;
+import com.example.aipcbuilder.service.helper.PromptBuilder;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
@@ -14,11 +15,13 @@ public class PCBuilderService {
     private final ChatClient chatClient;
     private final ChromaDBService chromaDBService;
     private final ContextBuilderHelper contextBuilder;
+    private final PromptBuilder promptBuilder;
 
-    public PCBuilderService(ChatModel chatModel, ChromaDBService chromaDBService, ContextBuilderHelper contextBuilder) {
+    public PCBuilderService(ChatModel chatModel, ChromaDBService chromaDBService, ContextBuilderHelper contextBuilder, PromptBuilder promptBuilder) {
         this.chatClient = ChatClient.create(chatModel);
         this.chromaDBService = chromaDBService;
         this.contextBuilder = contextBuilder;
+        this.promptBuilder = promptBuilder;
     }
 
     public String getChatResponse(String userMessage, Long userId) {
@@ -38,10 +41,14 @@ public class PCBuilderService {
         String context = contextBuilder.buildContext(componentResults, knowledgeResults, userContextResults);
         System.out.println("Context built: " + (context.length() > 0));
 
+        String compatibilityRules = promptBuilder.getAllCompatibilityRules();
+
         String systemPrompt = """
         You are an expert PC building assistant. Help users choose compatible PC components.
         When suggesting parts, be specific about compatibility requirements.
         Keep responses concise and helpful.
+        
+        %s
         
         Available Components, Knowledge, and Conversation Context:
         %s
@@ -52,7 +59,7 @@ public class PCBuilderService {
         - Suggest specific components when appropriate
         - Reference previous conversation context when relevant
         - If you don't have information, say so
-        """.formatted(context);
+        """.formatted(compatibilityRules, context);
 
         return chatClient.prompt()
                 .system(systemPrompt)

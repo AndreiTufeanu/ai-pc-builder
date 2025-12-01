@@ -135,6 +135,20 @@ public class PromptBuilder {
         };
     }
 
+    public String getAllCompatibilityRules() {
+        String[] componentOrder = {"CPU", "MOTHERBOARD", "RAM", "GPU", "STORAGE", "PSU", "CASE"};
+
+        StringBuilder allRules = new StringBuilder();
+        allRules.append("===== ALL COMPONENT COMPATIBILITY RULES =====\n\n");
+
+        for (String componentType : componentOrder) {
+            allRules.append(buildCompatibilityRules(componentType));
+            allRules.append("\n\n");
+        }
+
+        return allRules.toString();
+    }
+
     public String buildComponentSelectionMessage(String componentType,
                                                  Map<String, Map<String, Object>> requirements,
                                                  Map<String, PcComponent> alreadySelected,

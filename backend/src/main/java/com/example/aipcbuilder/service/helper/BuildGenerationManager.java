@@ -23,14 +23,10 @@ public class BuildGenerationManager {
         this.buildGenerator = buildGenerator;
     }
 
-    /**
-     * Generate a complete PC build using AI based on requirements
-     */
     public Build generateBuild(Build build, Map<String, Map<String, Object>> requirements) {
         System.out.println("=== AI Build Generation ===");
 
         try {
-            // Use AI to generate the build
             AIBuildRequest aiRequest = new AIBuildRequest(
                     build.getBudget() != null ? build.getBudget().doubleValue() : null,
                     requirements
@@ -39,10 +35,8 @@ public class BuildGenerationManager {
             AIBuildResponse aiResponse = buildGenerator.generateAIBuild(aiRequest);
 
             if (aiResponse.isSuccess() && aiResponse.getComponentIds() != null) {
-                // Set the component IDs from AI response
                 setComponentIdsFromAI(build, aiResponse.getComponentIds());
 
-                // Calculate total price
                 BigDecimal totalPrice = calculateTotalPrice(aiResponse.getComponentIds());
                 build.setTotalPrice(totalPrice);
 

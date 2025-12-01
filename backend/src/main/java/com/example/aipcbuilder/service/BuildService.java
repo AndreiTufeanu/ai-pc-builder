@@ -27,10 +27,8 @@ public class BuildService {
     }
 
     public Build generateAndSaveBuild(Build build, Map<String, Map<String, Object>> requirements) {
-        // Generate components based on requirements (requirements are passed separately)
         Build generatedBuild = buildGenerationManager.generateBuild(build, requirements);
 
-        // Save the complete build with component IDs (without storing requirements)
         return buildRepository.save(generatedBuild);
     }
 

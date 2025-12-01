@@ -24,7 +24,6 @@ public class BuildGenerator {
     private final ComponentSelector componentSelector;
     private final BuildResultMapper buildResultMapper;
 
-    // Component selection order
     private final String[] COMPONENT_ORDER = {"CPU", "MOTHERBOARD", "RAM", "GPU", "STORAGE", "PSU", "CASE"};
 
     public BuildGenerator(ChatModel chatModel, ChromaDBService chromaDBService,

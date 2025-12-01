@@ -29,7 +29,6 @@ public class PCBuilderService {
         System.out.println("Message: " + userMessage);
         System.out.println("User ID: " + userId);
 
-        // Search for relevant context
         List<Map<String, Object>> componentResults = chromaDBService.searchComponents(userMessage, 3, null);
         List<Map<String, Object>> knowledgeResults = chromaDBService.searchAdminKnowledge(userMessage, 2);
         List<Map<String, Object>> userContextResults = chromaDBService.searchUserMessagesByUser(userMessage, userId, 3);
@@ -69,7 +68,6 @@ public class PCBuilderService {
     }
 
     public String getAdminTrainingResponse(String userMessage) {
-        // Add admin message to knowledge base (no user ID)
         Map<String, Object> metadata = Map.of(
                 "timestamp", java.time.Instant.now().toString(),
                 "source", "admin_training"
@@ -77,7 +75,6 @@ public class PCBuilderService {
 
         chromaDBService.addAdminKnowledge(userMessage, "TRAINING", metadata);
 
-        // Search for relevant components to provide context
         List<Map<String, Object>> componentResults = chromaDBService.searchComponents(userMessage, 2, null);
         String context = componentResults.isEmpty() ? "" :
                 "\nRelevant Components:\n" + contextBuilder.buildComponentContext(componentResults);

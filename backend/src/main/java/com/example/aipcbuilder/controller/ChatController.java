@@ -35,7 +35,6 @@ public class ChatController {
 
         System.out.println("Chat message saved with ID: " + savedMessage.getId());
 
-        // Sync latest messages to ChromaDB
         List<ChatMessage> userMessages = chatMessageService.getUserChatHistory(request.getUserId());
         chromaDBService.syncLatestUserMessages(request.getUserId(), userMessages);
 

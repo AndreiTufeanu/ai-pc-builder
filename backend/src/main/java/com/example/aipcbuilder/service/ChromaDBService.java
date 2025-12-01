@@ -65,7 +65,6 @@ public class ChromaDBService {
         }
     }
 
-    // Admin knowledge methods
     public void addAdminKnowledge(String content, String knowledgeType, Map<String, Object> metadata) {
         try {
             Map<String, Object> knowledgeData = new HashMap<>();
@@ -89,7 +88,6 @@ public class ChromaDBService {
         }
     }
 
-    // Search methods
     public List<Map<String, Object>> searchComponents(String query, int nResults, @Nullable String componentType) {
         return searchCollection("components", query, nResults, componentType);
     }
@@ -150,7 +148,6 @@ public class ChromaDBService {
         }
     }
 
-    // User messages methods
     public void syncUserMessages(List<ChatMessage> messages) {
         try {
             List<Map<String, Object>> messageData = messages.stream()
@@ -192,7 +189,6 @@ public class ChromaDBService {
                         "admin_user_id", message.getUserId().toString()
                 );
 
-                // Use the user message as the knowledge content
                 addAdminKnowledge(message.getUserMessage(), "TRAINING", metadata);
             }
             System.out.println("✓ Synced " + adminMessages.size() + " admin knowledge items to ChromaDB");
@@ -210,7 +206,6 @@ public class ChromaDBService {
         }
     }
 
-    // Startup cleanup
     public void performStartupCleanup() {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(

@@ -9,7 +9,6 @@ import java.util.Map;
 @Component
 public class PromptBuilder {
 
-    // Component priority for cost reduction
     private final List<String> COMPONENT_PRIORITY = List.of(
             "CPU", "GPU", "PSU", "RAM", "MOTHERBOARD", "STORAGE", "CASE"
     );
@@ -136,12 +135,10 @@ public class PromptBuilder {
     }
 
     public String getAllCompatibilityRules() {
-        String[] componentOrder = {"CPU", "MOTHERBOARD", "RAM", "GPU", "STORAGE", "PSU", "CASE"};
-
         StringBuilder allRules = new StringBuilder();
         allRules.append("===== ALL COMPONENT COMPATIBILITY RULES =====\n\n");
 
-        for (String componentType : componentOrder) {
+        for (String componentType : COMPONENT_PRIORITY) {
             allRules.append(buildCompatibilityRules(componentType));
             allRules.append("\n\n");
         }
@@ -202,7 +199,6 @@ public class PromptBuilder {
                             .append("] ").append(component.getName())
                             .append(" ($").append(component.getPrice()).append(")\n");
 
-                    // Add critical specifications for compatibility
                     Map<String, Object> specs = component.getSpecifications();
                     if (specs != null && !specs.isEmpty()) {
                         message.append("Specifications:\n");

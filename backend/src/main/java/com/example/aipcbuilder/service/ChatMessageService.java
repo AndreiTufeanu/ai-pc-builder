@@ -17,17 +17,11 @@ public class ChatMessageService {
         this.chatMessageRepository = chatMessageRepository;
     }
 
-    /**
-     * Save a chat message with AI response (for both users and admins)
-     */
     public ChatMessage saveChatMessage(Long userId, String userMessage, String aiResponse) {
         ChatMessage chatMessage = new ChatMessage(userId, userMessage, aiResponse);
         return chatMessageRepository.save(chatMessage);
     }
-
-    /**
-     * Get user's chat history
-     */
+    
     public List<ChatMessage> getUserChatHistory(Long userId) {
         return chatMessageRepository.findByUserIdOrderByCreatedAt(userId);
     }

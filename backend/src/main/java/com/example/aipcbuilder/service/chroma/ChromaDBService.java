@@ -1,4 +1,4 @@
-package com.example.aipcbuilder.service;
+package com.example.aipcbuilder.service.chroma;
 
 import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.model.PcComponent;

@@ -1,4 +1,4 @@
-package com.example.aipcbuilder.service;
+package com.example.aipcbuilder.service.chat;
 
 import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.repository.ChatMessageRepository;

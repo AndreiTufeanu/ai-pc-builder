@@ -1,4 +1,4 @@
-package com.example.aipcbuilder.service;
+package com.example.aipcbuilder.service.build;
 
 import com.example.aipcbuilder.dto.BuildWithComponents;
 import com.example.aipcbuilder.model.Build;

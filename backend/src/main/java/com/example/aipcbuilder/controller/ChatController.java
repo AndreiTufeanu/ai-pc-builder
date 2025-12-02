@@ -3,9 +3,9 @@ package com.example.aipcbuilder.controller;
 import com.example.aipcbuilder.dto.ChatRequest;
 import com.example.aipcbuilder.dto.ChatResponse;
 import com.example.aipcbuilder.model.ChatMessage;
-import com.example.aipcbuilder.service.ChatMessageService;
-import com.example.aipcbuilder.service.ChromaDBService;
-import com.example.aipcbuilder.service.PCBuilderService;
+import com.example.aipcbuilder.service.chat.ChatMessageService;
+import com.example.aipcbuilder.service.chroma.ChromaDBService;
+import com.example.aipcbuilder.service.build.PCBuilderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

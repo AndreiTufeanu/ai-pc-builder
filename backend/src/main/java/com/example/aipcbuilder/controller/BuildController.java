@@ -4,7 +4,7 @@ import com.example.aipcbuilder.dto.BuildRequest;
 import com.example.aipcbuilder.dto.BuildResponse;
 import com.example.aipcbuilder.dto.BuildWithComponents;
 import com.example.aipcbuilder.model.Build;
-import com.example.aipcbuilder.service.BuildService;
+import com.example.aipcbuilder.service.build.BuildService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

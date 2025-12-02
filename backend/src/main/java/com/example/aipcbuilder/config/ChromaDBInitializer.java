@@ -5,7 +5,7 @@ import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.repository.ChatMessageRepository;
 import com.example.aipcbuilder.repository.PcComponentRepository;
 import com.example.aipcbuilder.repository.UserRepository;
-import com.example.aipcbuilder.service.ChromaDBService;
+import com.example.aipcbuilder.service.chroma.ChromaDBService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 

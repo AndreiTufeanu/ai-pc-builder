@@ -1,5 +1,6 @@
-package com.example.aipcbuilder.service;
+package com.example.aipcbuilder.service.build;
 
+import com.example.aipcbuilder.service.chroma.ChromaDBService;
 import com.example.aipcbuilder.service.helper.ContextBuilderHelper;
 import com.example.aipcbuilder.service.helper.PromptBuilder;
 import org.springframework.ai.chat.client.ChatClient;
@@ -40,25 +41,7 @@ public class PCBuilderService {
         String context = contextBuilder.buildContext(componentResults, knowledgeResults, userContextResults);
         System.out.println("Context built: " + (context.length() > 0));
 
-        String compatibilityRules = promptBuilder.getAllCompatibilityRules();
-
-        String systemPrompt = """
-        You are an expert PC building assistant. Help users choose compatible PC components.
-        When suggesting parts, be specific about compatibility requirements.
-        Keep responses concise and helpful.
-        
-        %s
-        
-        Available Components, Knowledge, and Conversation Context:
-        %s
-        
-        Instructions:
-        - Use the component information above when relevant
-        - Consider compatibility between components
-        - Suggest specific components when appropriate
-        - Reference previous conversation context when relevant
-        - If you don't have information, say so
-        """.formatted(compatibilityRules, context);
+        String systemPrompt = promptBuilder.buildChatSystemPrompt(context);
 
         return chatClient.prompt()
                 .system(systemPrompt)
@@ -79,14 +62,7 @@ public class PCBuilderService {
         String context = componentResults.isEmpty() ? "" :
                 "\nRelevant Components:\n" + contextBuilder.buildComponentContext(componentResults);
 
-        String systemPrompt = """
-            You are receiving training information about PC components and building.
-            Acknowledge the information and explain how it will help improve recommendations.
-            
-            %s
-            
-            Respond professionally and thank the admin for the training data.
-            """.formatted(context);
+        String systemPrompt = promptBuilder.buildAdminTrainingSystemPrompt(context);
 
         return chatClient.prompt()
                 .system(systemPrompt)

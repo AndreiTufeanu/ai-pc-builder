@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class PromptBuilder {
@@ -134,18 +135,6 @@ public class PromptBuilder {
         };
     }
 
-    public String getAllCompatibilityRules() {
-        StringBuilder allRules = new StringBuilder();
-        allRules.append("===== ALL COMPONENT COMPATIBILITY RULES =====\n\n");
-
-        for (String componentType : COMPONENT_PRIORITY) {
-            allRules.append(buildCompatibilityRules(componentType));
-            allRules.append("\n\n");
-        }
-
-        return allRules.toString();
-    }
-
     public String buildComponentSelectionMessage(String componentType,
                                                  Map<String, Map<String, Object>> requirements,
                                                  Map<String, PcComponent> alreadySelected,
@@ -261,5 +250,40 @@ public class PromptBuilder {
         instruction.append("\nRemember: Compatibility is the highest priority. Only suggest compatible alternatives.");
 
         return instruction.toString();
+    }
+
+    public String buildChatSystemPrompt(String context) {
+        String compatibilityRules = COMPONENT_PRIORITY.stream()
+                .map(this::buildCompatibilityRules)
+                .collect(Collectors.joining("\n\n", "===== ALL COMPONENT COMPATIBILITY RULES =====\n\n", "\n\n"));
+
+        return """
+            You are an expert PC building assistant. Help users choose compatible PC components.
+            When suggesting parts, be specific about compatibility requirements.
+            Keep responses concise and helpful.
+            
+            %s
+            
+            Available Components, Knowledge, and Conversation Context:
+            %s
+            
+            Instructions:
+            - Use the component information above when relevant
+            - Consider compatibility between components
+            - Suggest specific components when appropriate
+            - Reference previous conversation context when relevant
+            - If you don't have information, say so
+            """.formatted(compatibilityRules, context);
+    }
+
+    public String buildAdminTrainingSystemPrompt(String context) {
+        return """
+            You are receiving training information about PC components and building.
+            Acknowledge the information and explain how it will help improve recommendations.
+            
+            %s
+            
+            Respond professionally and thank the admin for the training data.
+            """.formatted(context);
     }
 }

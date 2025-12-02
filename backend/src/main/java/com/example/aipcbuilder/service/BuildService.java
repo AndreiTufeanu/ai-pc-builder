@@ -1,6 +1,6 @@
 package com.example.aipcbuilder.service;
 
-import com.example.aipcbuilder.dto.BuildWithComponentsDTO;
+import com.example.aipcbuilder.dto.BuildWithComponents;
 import com.example.aipcbuilder.model.Build;
 import com.example.aipcbuilder.repository.BuildRepository;
 import com.example.aipcbuilder.repository.PcComponentRepository;
@@ -32,7 +32,7 @@ public class BuildService {
         return buildRepository.save(generatedBuild);
     }
 
-    public List<BuildWithComponentsDTO> getUserBuilds(Long userId) {
+    public List<BuildWithComponents> getUserBuilds(Long userId) {
         List<Build> builds = buildRepository.findByUserIdOrderByCreatedAtDesc(userId);
 
         return builds.stream()
@@ -40,8 +40,8 @@ public class BuildService {
                 .collect(Collectors.toList());
     }
 
-    private BuildWithComponentsDTO convertToBuildWithComponentsDTO(Build build) {
-        return new BuildWithComponentsDTO(
+    private BuildWithComponents convertToBuildWithComponentsDTO(Build build) {
+        return new BuildWithComponents(
                 build.getId(),
                 build.getUserId(),
                 build.getName(),

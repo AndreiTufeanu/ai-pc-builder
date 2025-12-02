@@ -21,7 +21,7 @@ public class User {
     private String username;
 
     @Column(nullable = false)
-    private String password; // Stored as plain text
+    private String password;
 
     private boolean enabled = true;
 

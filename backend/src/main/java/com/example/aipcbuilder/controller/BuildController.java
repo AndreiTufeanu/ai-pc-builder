@@ -2,7 +2,7 @@ package com.example.aipcbuilder.controller;
 
 import com.example.aipcbuilder.dto.BuildRequest;
 import com.example.aipcbuilder.dto.BuildResponse;
-import com.example.aipcbuilder.dto.BuildWithComponentsDTO;
+import com.example.aipcbuilder.dto.BuildWithComponents;
 import com.example.aipcbuilder.model.Build;
 import com.example.aipcbuilder.service.BuildService;
 import org.springframework.http.ResponseEntity;
@@ -61,7 +61,7 @@ public class BuildController {
     }
 
     @GetMapping("/user/{userId}/builds")
-    public List<BuildWithComponentsDTO> getUserBuilds(@PathVariable Long userId) {
+    public List<BuildWithComponents> getUserBuilds(@PathVariable Long userId) {
         return buildService.getUserBuilds(userId);
     }
 

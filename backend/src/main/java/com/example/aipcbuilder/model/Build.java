@@ -30,7 +30,6 @@ public class Build {
     @Column(name = "budget", precision = 10, scale = 2)
     private BigDecimal budget;
 
-    // Individual component IDs
     @Column(name = "cpu_id")
     private Long cpuId;
 

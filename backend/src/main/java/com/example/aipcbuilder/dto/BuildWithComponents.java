@@ -7,14 +7,13 @@ import java.time.LocalDateTime;
 
 @Setter
 @Getter
-public class BuildWithComponentsDTO {
+public class BuildWithComponents {
     private Long id;
     private Long userId;
     private String name;
     private Double totalPrice;
     private LocalDateTime createdAt;
 
-    // Component names instead of IDs
     private String cpu;
     private String gpu;
     private String psu;
@@ -24,11 +23,11 @@ public class BuildWithComponentsDTO {
     private String pcCase;
 
     // Constructors
-    public BuildWithComponentsDTO() {}
+    public BuildWithComponents() {}
 
-    public BuildWithComponentsDTO(Long id, Long userId, String name, Double totalPrice, LocalDateTime createdAt,
-                                  String cpu, String gpu, String psu, String ram, String storage,
-                                  String motherboard, String pcCase) {
+    public BuildWithComponents(Long id, Long userId, String name, Double totalPrice, LocalDateTime createdAt,
+                               String cpu, String gpu, String psu, String ram, String storage,
+                               String motherboard, String pcCase) {
         this.id = id;
         this.userId = userId;
         this.name = name;

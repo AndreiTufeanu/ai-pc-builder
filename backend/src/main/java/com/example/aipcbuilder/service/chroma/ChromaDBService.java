@@ -209,7 +209,7 @@ public class ChromaDBService {
     public void performStartupCleanup() {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(
-                    chromaDbServerUrl + "/cleanup/startup",
+                    chromaDbServerUrl + "/user_messages/cleanup/startup",
                     null,
                     String.class
             );

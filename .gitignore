@@ -83,3 +83,4 @@ Thumbs.db
 # -----------------------
 /chroma/.idea/
 /chroma/__pycache__/
+/chroma/endpoints/__pycache__/

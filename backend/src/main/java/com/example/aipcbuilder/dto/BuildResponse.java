@@ -1,21 +1,15 @@
 package com.example.aipcbuilder.dto;
 
 import com.example.aipcbuilder.model.Build;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Setter
-@Getter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class BuildResponse {
     private Build build;
     private String message;
     private boolean success;
-
-    public BuildResponse() {}
-
-    public BuildResponse(Build build, String message, boolean success) {
-        this.build = build;
-        this.message = message;
-        this.success = success;
-    }
 }

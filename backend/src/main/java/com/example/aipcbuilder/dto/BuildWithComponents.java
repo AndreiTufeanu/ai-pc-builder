@@ -1,12 +1,13 @@
 package com.example.aipcbuilder.dto;
-
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 
-@Setter
-@Getter
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class BuildWithComponents {
     private Long id;
     private Long userId;
@@ -21,25 +22,4 @@ public class BuildWithComponents {
     private String storage;
     private String motherboard;
     private String pcCase;
-
-    // Constructors
-    public BuildWithComponents() {}
-
-    public BuildWithComponents(Long id, Long userId, String name, Double totalPrice, LocalDateTime createdAt,
-                               String cpu, String gpu, String psu, String ram, String storage,
-                               String motherboard, String pcCase) {
-        this.id = id;
-        this.userId = userId;
-        this.name = name;
-        this.totalPrice = totalPrice;
-        this.createdAt = createdAt;
-        this.cpu = cpu;
-        this.gpu = gpu;
-        this.psu = psu;
-        this.ram = ram;
-        this.storage = storage;
-        this.motherboard = motherboard;
-        this.pcCase = pcCase;
-    }
-
 }

@@ -8,6 +8,7 @@ import com.example.aipcbuilder.service.chat.ChatMessageService;
 import com.example.aipcbuilder.service.component.ComponentService;
 import com.example.aipcbuilder.service.build.PCBuilderService;
 import com.example.aipcbuilder.utils.ResponseHelper;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -104,7 +105,7 @@ public class AdminController {
     }
 
     @PostMapping("/chat")
-    public ResponseEntity<ChatResponse> adminChat(@RequestBody ChatRequest request) {
+    public ResponseEntity<ChatResponse> adminChat(@Valid @RequestBody ChatRequest request) {
         System.out.println("Admin chat message from user ID: " + request.getUserId() + ", Message: " + request.getMessage());
 
         String response = pcBuilderService.getAdminTrainingResponse(request.getMessage());

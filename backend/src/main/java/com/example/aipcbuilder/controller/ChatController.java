@@ -6,6 +6,8 @@ import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.service.chat.ChatMessageService;
 import com.example.aipcbuilder.service.chroma.ChromaDBService;
 import com.example.aipcbuilder.service.build.PCBuilderService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,20 +16,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/chat")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class ChatController {
 
     private final PCBuilderService pcBuilderService;
     private final ChatMessageService chatMessageService;
     private final ChromaDBService chromaDBService;
 
-    public ChatController(PCBuilderService pcBuilderService, ChatMessageService chatMessageService, ChromaDBService chromaDBService) {
-        this.pcBuilderService = pcBuilderService;
-        this.chatMessageService = chatMessageService;
-        this.chromaDBService = chromaDBService;
-    }
-
     @PostMapping
-    public ChatResponse chat(@RequestBody ChatRequest request) {
+    public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
         System.out.println("Chat request from user ID: " + request.getUserId() + ", Message: " + request.getMessage());
 
         String aiResponse = pcBuilderService.getChatResponse(request.getMessage(), request.getUserId());

@@ -40,7 +40,7 @@ public class ChromaDBInitializer implements CommandLineRunner {
         List<PcComponent> components = componentRepository.findAll();
         if (!components.isEmpty()) {
             System.out.println("Syncing " + components.size() + " components to ChromaDB...");
-            chromaDBService.syncComponentsBatch(components); // Updated method name
+            chromaDBService.syncComponentsBatch(components);
         }
 
         // Clear and sync admin knowledge from all admin users

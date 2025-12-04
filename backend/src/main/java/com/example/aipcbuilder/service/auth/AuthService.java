@@ -48,10 +48,6 @@ public class AuthService {
             return new SignupResponse(false, "Username is already taken!");
         }
 
-        if (!isValidPassword(request)) {
-            return new SignupResponse(false, "Password must be at least 6 characters long and match confirmation");
-        }
-
         try {
             User user = createUser(request);
             userRepository.save(user);
@@ -59,12 +55,6 @@ public class AuthService {
         } catch (Exception e) {
             return new SignupResponse(false, "Error during registration: " + e.getMessage());
         }
-    }
-
-    private boolean isValidPassword(SignupRequest request) {
-        return request.getPassword() != null &&
-                request.getPassword().length() >= 6 &&
-                request.getPassword().equals(request.getConfirmPassword());
     }
 
     private User createUser(SignupRequest request) {

@@ -1,15 +1,18 @@
 package com.example.aipcbuilder.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Setter
-@Getter
 @Entity
 @Table(name = "pc_builds")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Build {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,11 +56,6 @@ public class Build {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    // Constructors
-    public Build() {
-        this.createdAt = LocalDateTime.now();
-    }
 
     public Build(Long userId, String name, String description, BigDecimal budget) {
         this();

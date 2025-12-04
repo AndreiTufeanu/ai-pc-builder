@@ -1,15 +1,18 @@
 package com.example.aipcbuilder.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Setter
-@Getter
+
 @Entity
 @Table(name = "chat_messages")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChatMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,11 +29,6 @@ public class ChatMessage {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    // Constructors
-    public ChatMessage() {
-        this.createdAt = LocalDateTime.now();
-    }
 
     public ChatMessage(Long userId, String userMessage, String aiResponse) {
         this();

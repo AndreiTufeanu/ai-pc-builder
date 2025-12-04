@@ -28,7 +28,6 @@ export class SignupComponent {
   ) {}
 
   onSignup(): void {
-    // Validation
     if (!this.signupData.username || !this.signupData.password || !this.signupData.confirmPassword) {
       this.errorMessage = 'Please fill in all fields';
       return;
@@ -39,8 +38,8 @@ export class SignupComponent {
       return;
     }
 
-    if (this.signupData.password.length < 6) {
-      this.errorMessage = 'Password must be at least 6 characters long';
+    if (this.signupData.password.length < 3) {
+      this.errorMessage = 'Password must be at least 3 characters long';
       return;
     }
 
@@ -56,7 +55,6 @@ export class SignupComponent {
       next: (response) => {
         this.isLoading = false;
         if (response.success) {
-          // Redirect to login page after successful signup
           this.router.navigate(['/login'], { 
             queryParams: { message: 'Account created successfully! Please login.' }
           });

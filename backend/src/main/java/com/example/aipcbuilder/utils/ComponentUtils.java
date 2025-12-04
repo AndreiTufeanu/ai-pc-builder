@@ -1,19 +1,14 @@
 package com.example.aipcbuilder.utils;
 
 import com.example.aipcbuilder.model.PcComponent;
-import org.springframework.http.ResponseEntity;
+import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
 @Component
+@NoArgsConstructor
 public class ComponentUtils {
-
-    private final ResponseHelper responseHelper;
-
-    public ComponentUtils(ResponseHelper responseHelper) {
-        this.responseHelper = responseHelper;
-    }
 
     public boolean isValidComponentRequest(Map<String, Object> requestData) {
         return requestData.containsKey("name") &&
@@ -56,13 +51,5 @@ public class ComponentUtils {
             Map<String, Object> specifications = (Map<String, Object>) requestData.get("specifications");
             component.setSpecifications(specifications);
         }
-    }
-
-    public ResponseEntity<?> badRequest(String message) {
-        return responseHelper.badRequest(message);
-    }
-
-    public ResponseEntity<?> internalServerError(String message) {
-        return responseHelper.internalServerError(message);
     }
 }

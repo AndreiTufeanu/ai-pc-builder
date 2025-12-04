@@ -1,19 +1,19 @@
 package com.example.aipcbuilder.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.DecimalMin;
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
 import java.util.Map;
 
-@Setter
-@Getter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AIBuildRequest {
+
+    @DecimalMin(value = "300.00", message = "Minimum budget is $300")
     private Double budget;
+
     private Map<String, Map<String, Object>> requirements;
-
-    public AIBuildRequest() {}
-
-    public AIBuildRequest(Double budget, Map<String, Map<String, Object>> requirements) {
-        this.budget = budget;
-        this.requirements = requirements;
-    }
 }

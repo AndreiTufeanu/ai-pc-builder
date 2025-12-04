@@ -5,6 +5,8 @@ import com.example.aipcbuilder.dto.BuildResponse;
 import com.example.aipcbuilder.dto.BuildWithComponents;
 import com.example.aipcbuilder.model.Build;
 import com.example.aipcbuilder.service.build.BuildService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,16 +15,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/build")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class BuildController {
 
     private final BuildService buildService;
 
-    public BuildController(BuildService buildService) {
-        this.buildService = buildService;
-    }
-
     @PostMapping("/generate")
-    public ResponseEntity<BuildResponse> generateBuild(@RequestBody BuildRequest request) {
+    public ResponseEntity<BuildResponse> generateBuild(@Valid @RequestBody BuildRequest request) {
         try {
             System.out.println("Generating build for user: " + request.getUserId());
             System.out.println("Name: " + request.getName());

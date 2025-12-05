@@ -1,18 +1,23 @@
 .auth-container {
-  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: min(4vh, 40px) min(2vw, 20px);
+  overflow-y: auto;
 }
 
 .auth-card {
   background: white;
-  border-radius: 20px;
-  padding: 40px;
+  border-radius: clamp(16px, 2vw, 20px);
+  padding: clamp(24px, 4vh, 40px) clamp(20px, 3vw, 40px);
   box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-  max-width: 450px;
+  max-width: min(450px, 90vw);
   width: 100%;
 }
 
@@ -143,14 +148,4 @@
 
 .back-link:hover {
   text-decoration: underline;
-}
-
-@media (max-width: 480px) {
-  .auth-card {
-    padding: 30px 20px;
-  }
-  
-  .auth-title {
-    font-size: 1.75rem;
-  }
 }

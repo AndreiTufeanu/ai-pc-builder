@@ -35,6 +35,7 @@ public class ChatMessage {
         this.userId = userId;
         this.userMessage = userMessage;
         this.aiResponse = aiResponse;
+        this.createdAt = LocalDateTime.now();
     }
 
 }

@@ -1,0 +1,94 @@
+package com.example.aipcbuilder.service.chroma.collections;
+
+import com.example.aipcbuilder.model.ChatMessage;
+import com.example.aipcbuilder.service.chroma.client.ChromaDBClient;
+import com.example.aipcbuilder.service.helper.ChromaDataHelper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class KnowledgeCollectionService {
+
+    private static final String COLLECTION_NAME = "admin_knowledge";
+    private static final String KNOWLEDGE_ENDPOINT = "/admin/knowledge";
+    private static final String CLEAR_ENDPOINT = "/admin/knowledge/clear";
+    private static final String SEARCH_ENDPOINT = "/search";
+
+    private final ChromaDBClient client;
+
+    public void addKnowledge(String content, String knowledgeType, Map<String, Object> metadata) {
+        Map<String, Object> knowledgeData = Map.of(
+                "content", content,
+                "knowledge_type", knowledgeType,
+                "metadata", metadata != null ? metadata : Map.of()
+        );
+
+        try {
+            client.post(KNOWLEDGE_ENDPOINT, knowledgeData, String.class);
+            log.debug("Added admin knowledge to ChromaDB");
+        } catch (Exception e) {
+            log.error("Failed to add admin knowledge: {}", e.getMessage());
+        }
+    }
+
+    public void addKnowledge(String content) {
+        Map<String, Object> metadata = Map.of(
+                "timestamp", Instant.now().toString(),
+                "source", "admin_training"
+        );
+        addKnowledge(content, "TRAINING", metadata);
+    }
+
+    public void clear() {
+        try {
+            client.delete(CLEAR_ENDPOINT);
+            log.info("Cleared admin knowledge collection");
+        } catch (Exception e) {
+            log.error("Failed to clear admin knowledge: {}", e.getMessage());
+        }
+    }
+
+    public List<Map<String, Object>> search(String query, int limit) {
+        return searchCollection(query, limit, COLLECTION_NAME);
+    }
+
+    public void syncMessages(List<ChatMessage> messages) {
+        messages.forEach(message -> {
+            Map<String, Object> metadata = Map.of(
+                    "timestamp", message.getCreatedAt().toString(),
+                    "source", "admin_training",
+                    "message_id", message.getId().toString(),
+                    "admin_user_id", message.getUserId().toString()
+            );
+            addKnowledge(message.getUserMessage(), "TRAINING", metadata);
+        });
+        log.info("Synced {} admin knowledge messages", messages.size());
+    }
+
+    private List<Map<String, Object>> searchCollection(String query, int limit, String collection) {
+        Map<String, Object> searchRequest = Map.of(
+                "query", query,
+                "collection", collection,
+                "n_results", limit
+        );
+
+        try {
+            Map<String, Object> response = client.post(
+                    SEARCH_ENDPOINT,
+                    searchRequest,
+                    new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+            return (List<Map<String, Object>>) response.getOrDefault("results", List.of());
+        } catch (Exception e) {
+            log.error("Failed to search collection {}: {}", collection, e.getMessage());
+            return List.of();
+        }
+    }
+}

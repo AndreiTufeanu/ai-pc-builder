@@ -33,7 +33,7 @@ public class ChatController {
         System.out.println("Chat message saved with ID: " + savedMessage.getId());
 
         List<ChatMessage> userMessages = chatMessageService.getUserChatHistory(request.getUserId());
-        chromaDBService.syncLatestUserMessages(request.getUserId(), userMessages);
+        chromaDBService.syncLatestUserMessages(userMessages);
 
         return new ChatResponse(aiResponse, savedMessage.getId());
     }

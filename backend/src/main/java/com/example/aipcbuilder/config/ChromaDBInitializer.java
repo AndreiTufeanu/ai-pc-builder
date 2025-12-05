@@ -63,7 +63,7 @@ public class ChromaDBInitializer implements CommandLineRunner {
             List<ChatMessage> userMessages = chatMessageRepository.findByUserIdOrderByCreatedAtDesc(userId);
             if (!userMessages.isEmpty()) {
                 System.out.println("Syncing " + Math.min(userMessages.size(), 50) + " messages for user " + userId);
-                chromaDBService.syncLatestUserMessages(userId, userMessages);
+                chromaDBService.syncLatestUserMessages(userMessages);
             }
         }
 

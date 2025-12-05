@@ -1,11 +1,13 @@
 // BuildGenerationService.java
-package com.example.aipcbuilder.service.helper;
+package com.example.aipcbuilder.service.build.helper;
 
 import com.example.aipcbuilder.dto.AIBuildRequest;
 import com.example.aipcbuilder.dto.AIBuildResponse;
 import com.example.aipcbuilder.model.Build;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.repository.PcComponentRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -13,18 +15,15 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class BuildGenerationManager {
+@Slf4j
+@RequiredArgsConstructor
+public class BuildGenerationService {
 
     private final PcComponentRepository componentRepository;
-    private final BuildGenerator buildGenerator;
-
-    public BuildGenerationManager(PcComponentRepository componentRepository, BuildGenerator buildGenerator) {
-        this.componentRepository = componentRepository;
-        this.buildGenerator = buildGenerator;
-    }
+    private final BuildGeneratorService buildGeneratorService;
 
     public Build generateBuild(Build build, Map<String, Map<String, Object>> requirements) {
-        System.out.println("=== AI Build Generation ===");
+        log.info("=== AI Build Generation ===");
 
         try {
             AIBuildRequest aiRequest = new AIBuildRequest(
@@ -32,7 +31,7 @@ public class BuildGenerationManager {
                     requirements
             );
 
-            AIBuildResponse aiResponse = buildGenerator.generateAIBuild(aiRequest);
+            AIBuildResponse aiResponse = buildGeneratorService.generateAIBuild(aiRequest);
 
             if (aiResponse.isSuccess() && aiResponse.getComponentIds() != null) {
                 setComponentIdsFromAI(build, aiResponse.getComponentIds());
@@ -40,11 +39,11 @@ public class BuildGenerationManager {
                 BigDecimal totalPrice = calculateTotalPrice(aiResponse.getComponentIds());
                 build.setTotalPrice(totalPrice);
 
-                System.out.println("AI build generation successful");
+                log.info("AI build generation successful");
             }
 
         } catch (Exception e) {
-            System.err.println("Error in AI build generation, using fallback: " + e.getMessage());
+            log.error("Error in AI build generation, using fallback: {}", e.getMessage());
         }
 
         return build;

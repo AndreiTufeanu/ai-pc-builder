@@ -1,4 +1,4 @@
-package com.example.aipcbuilder.service.helper;
+package com.example.aipcbuilder.service.build.helper;
 
 import com.example.aipcbuilder.model.PcComponent;
 import org.springframework.stereotype.Component;
@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class PromptBuilder {
+public class PromptBuilderService {
 
     private final List<String> COMPONENT_PRIORITY = List.of(
             "CPU", "GPU", "PSU", "RAM", "MOTHERBOARD", "STORAGE", "CASE"

@@ -1,8 +1,9 @@
 package com.example.aipcbuilder.service.build;
 
 import com.example.aipcbuilder.service.chroma.ChromaDBService;
-import com.example.aipcbuilder.service.helper.ContextBuilderHelper;
-import com.example.aipcbuilder.service.helper.PromptBuilder;
+import com.example.aipcbuilder.service.build.helper.ContextBuilderService;
+import com.example.aipcbuilder.service.build.helper.PromptBuilderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
@@ -11,37 +12,38 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class PCBuilderService {
 
     private final ChatClient chatClient;
     private final ChromaDBService chromaDBService;
-    private final ContextBuilderHelper contextBuilder;
-    private final PromptBuilder promptBuilder;
+    private final ContextBuilderService contextBuilder;
+    private final PromptBuilderService promptBuilderService;
 
-    public PCBuilderService(ChatModel chatModel, ChromaDBService chromaDBService, ContextBuilderHelper contextBuilder, PromptBuilder promptBuilder) {
+    public PCBuilderService(ChatModel chatModel, ChromaDBService chromaDBService, ContextBuilderService contextBuilder, PromptBuilderService promptBuilderService) {
         this.chatClient = ChatClient.create(chatModel);
         this.chromaDBService = chromaDBService;
         this.contextBuilder = contextBuilder;
-        this.promptBuilder = promptBuilder;
+        this.promptBuilderService = promptBuilderService;
     }
 
     public String getChatResponse(String userMessage, Long userId) {
-        System.out.println("=== User Chat Request ===");
-        System.out.println("Message: " + userMessage);
-        System.out.println("User ID: " + userId);
+        log.info("=== User Chat Request ===");
+        log.info("Message: {}", userMessage);
+        log.info("User ID: {}", userId);
 
         List<Map<String, Object>> componentResults = chromaDBService.searchComponents(userMessage, 3, null);
         List<Map<String, Object>> knowledgeResults = chromaDBService.searchAdminKnowledge(userMessage, 2);
         List<Map<String, Object>> userContextResults = chromaDBService.searchUserMessagesByUser(userMessage, userId, 3);
 
-        System.out.println("Found " + componentResults.size() + " relevant components");
-        System.out.println("Found " + knowledgeResults.size() + " relevant knowledge items");
-        System.out.println("Found " + userContextResults.size() + " relevant user context items");
+        log.debug("Found {} relevant components", componentResults.size());
+        log.debug("Found {} relevant knowledge items", knowledgeResults.size());
+        log.debug("Found {} relevant user context items", userContextResults.size());
 
         String context = contextBuilder.buildContext(componentResults, knowledgeResults, userContextResults);
-        System.out.println("Context built: " + (context.length() > 0));
+        log.debug("Context built: {}", !context.isEmpty());
 
-        String systemPrompt = promptBuilder.buildChatSystemPrompt(context);
+        String systemPrompt = promptBuilderService.buildChatSystemPrompt(context);
 
         return chatClient.prompt()
                 .system(systemPrompt)
@@ -62,7 +64,7 @@ public class PCBuilderService {
         String context = componentResults.isEmpty() ? "" :
                 "\nRelevant Components:\n" + contextBuilder.buildComponentContext(componentResults);
 
-        String systemPrompt = promptBuilder.buildAdminTrainingSystemPrompt(context);
+        String systemPrompt = promptBuilderService.buildAdminTrainingSystemPrompt(context);
 
         return chatClient.prompt()
                 .system(systemPrompt)

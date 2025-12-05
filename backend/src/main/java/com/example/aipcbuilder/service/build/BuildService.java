@@ -4,7 +4,9 @@ import com.example.aipcbuilder.dto.BuildWithComponents;
 import com.example.aipcbuilder.model.Build;
 import com.example.aipcbuilder.repository.BuildRepository;
 import com.example.aipcbuilder.repository.PcComponentRepository;
-import com.example.aipcbuilder.service.helper.BuildGenerationManager;
+import com.example.aipcbuilder.service.build.helper.BuildGenerationService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,27 +16,22 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@Slf4j
+@RequiredArgsConstructor
 public class BuildService {
 
     private final BuildRepository buildRepository;
-    private final BuildGenerationManager buildGenerationManager;
+    private final BuildGenerationService buildGenerationService;
     private final PcComponentRepository pcComponentRepository;
 
-    public BuildService(BuildRepository buildRepository, BuildGenerationManager buildGenerationManager, PcComponentRepository pcComponentRepository) {
-        this.buildRepository = buildRepository;
-        this.buildGenerationManager = buildGenerationManager;
-        this.pcComponentRepository = pcComponentRepository;
-    }
-
     public Build generateAndSaveBuild(Build build, Map<String, Map<String, Object>> requirements) {
-        Build generatedBuild = buildGenerationManager.generateBuild(build, requirements);
-
+        Build generatedBuild = buildGenerationService.generateBuild(build, requirements);
         return buildRepository.save(generatedBuild);
     }
 
     public List<BuildWithComponents> getUserBuilds(Long userId) {
         List<Build> builds = buildRepository.findByUserIdOrderByCreatedAtDesc(userId);
-
+        log.debug("Found {} builds for user {}", builds.size(), userId);
         return builds.stream()
                 .map(this::convertToBuildWithComponentsDTO)
                 .collect(Collectors.toList());
@@ -61,18 +58,13 @@ public class BuildService {
         if (componentId == null) {
             return "Not selected";
         }
-
         return pcComponentRepository.findComponentNameById(componentId)
                 .orElse("Component not found");
     }
 
     public void deleteBuild(Long userId, Long buildId) {
         buildRepository.deleteByUserIdAndId(userId, buildId);
+        log.info("Deleted build {} for user {}", buildId, userId);
     }
 
-    public Build getBuild(Long userId, Long buildId) {
-        return buildRepository.findById(buildId)
-                .filter(build -> build.getUserId().equals(userId))
-                .orElse(null);
-    }
 }

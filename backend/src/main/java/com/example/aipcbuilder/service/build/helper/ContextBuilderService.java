@@ -1,4 +1,4 @@
-package com.example.aipcbuilder.service.helper;
+package com.example.aipcbuilder.service.build.helper;
 
 import org.springframework.stereotype.Component;
 
@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class ContextBuilderHelper {
+public class ContextBuilderService {
 
     public String buildContext(List<Map<String, Object>> componentResults,
                                List<Map<String, Object>> knowledgeResults,

@@ -1,13 +1,14 @@
-package com.example.aipcbuilder.service.helper;
+package com.example.aipcbuilder.service.build.helper;
 
 import com.example.aipcbuilder.model.PcComponent;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class BuildResultMapper {
+public class BuildResultMapperService {
 
     public Map<String, Long> convertComponentsToIdMap(Map<String, PcComponent> selectedComponents) {
         Map<String, Long> componentIds = new HashMap<>();

@@ -2,7 +2,7 @@ package com.example.aipcbuilder.service.chroma.collections;
 
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.service.chroma.client.ChromaDBClient;
-import com.example.aipcbuilder.service.helper.ChromaDataHelper;
+import com.example.aipcbuilder.service.chroma.helper.ChromaDataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class ComponentCollectionService {
     private static final String DELETE_ENDPOINT = "/components/";
 
     private final ChromaDBClient client;
-    private final ChromaDataHelper dataHelper;
+    private final ChromaDataService dataHelper;
 
     public void upsert(List<PcComponent> components) {
         List<Map<String, Object>> componentsData = components.stream()

@@ -1,7 +1,9 @@
-package com.example.aipcbuilder.service.helper;
+package com.example.aipcbuilder.service.build.helper;
 
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.repository.PcComponentRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -9,31 +11,31 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Component
-public class ComponentSelector {
+@Slf4j
+@RequiredArgsConstructor
+public class ComponentSelectorService {
 
     private final PcComponentRepository componentRepository;
 
-    public ComponentSelector(PcComponentRepository componentRepository) {
-        this.componentRepository = componentRepository;
-    }
-
     public PcComponent findComponentById(String componentId, String componentType) {
         if (componentId == null || componentId.trim().isEmpty()) {
+            log.warn("Empty component ID for type: {}", componentType);
             return null;
         }
         try {
             Long id = Long.parseLong(componentId.trim());
             Optional<PcComponent> component = componentRepository.findById(id);
             if (component.isPresent()) {
+                log.debug("Found component ID {} for type {}", id, componentType);
                 return component.get();
             }
-            System.err.println("Could not find component in database with ID: " + componentId + " for type: " + componentType);
+            log.error("Could not find component in database with ID: {} for type: {}", componentId, componentType);
             return null;
         } catch (NumberFormatException e) {
-            System.err.println("Invalid component ID format: " + componentId + " for type: " + componentType);
+            log.error("Invalid component ID format: {} for type: {}", componentId, componentType);
             return null;
         } catch (Exception e) {
-            System.err.println("Error finding component by ID: " + e.getMessage());
+            log.error("Error finding component by ID: {}", e.getMessage());
             return null;
         }
     }
@@ -45,11 +47,11 @@ public class ComponentSelector {
         String idOnly = cleanResponse.replaceAll("[^0-9]", "").trim();
 
         if (!idOnly.isEmpty()) {
-            System.out.println("Parsed component ID: '" + idOnly + "' from response: '" + cleanResponse + "'");
+            log.debug("Parsed component ID: '{}' from response: '{}'", idOnly, cleanResponse);
             return idOnly;
         }
 
-        System.err.println("Could not parse component ID from response: " + cleanResponse + " for type: " + componentType);
+        log.error("Could not parse component ID from response: {} for type: {}", cleanResponse, componentType);
         return null;
     }
 
@@ -68,7 +70,9 @@ public class ComponentSelector {
             if (specs != null) specs.values().stream().filter(Objects::nonNull).forEach(v -> query.append(v).append(" "));
         }
 
-        return query.toString().trim();
+        String finalQuery = query.toString().trim();
+        log.debug("Built query for {}: {}", componentType, finalQuery);
+        return finalQuery;
     }
 
     private void addCompatibilityKeywords(StringBuilder query, String componentType, Map<String, PcComponent> alreadySelected) {
@@ -126,8 +130,11 @@ public class ComponentSelector {
         try {
             int gpuW = Integer.parseInt(gpuTdp.replaceAll("[^0-9]", ""));
             int cpuW = Integer.parseInt(cpuTdp.replaceAll("[^0-9]", ""));
-            return (int)((gpuW + cpuW + 150) * 1.3);
+            int estimatedPower = (int)((gpuW + cpuW + 150) * 1.3);
+            log.debug("Estimated total power: {}W (GPU: {}W, CPU: {}W)", estimatedPower, gpuW, cpuW);
+            return estimatedPower;
         } catch (NumberFormatException e) {
+            log.warn("Failed to parse power values, defaulting to 750W");
             return 750;
         }
     }

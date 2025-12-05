@@ -2,7 +2,7 @@ package com.example.aipcbuilder.service.chroma.collections;
 
 import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.service.chroma.client.ChromaDBClient;
-import com.example.aipcbuilder.service.helper.ChromaDataHelper;
+import com.example.aipcbuilder.service.chroma.helper.ChromaDataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class UserMessagesCollectionService {
     private static final String SEARCH_ENDPOINT = "/search";
 
     private final ChromaDBClient client;
-    private final ChromaDataHelper dataHelper;
+    private final ChromaDataService dataHelper;
 
     public void upsert(List<ChatMessage> messages) {
         List<Map<String, Object>> messageData = messages.stream()

@@ -2,7 +2,6 @@ package com.example.aipcbuilder.service.chroma.collections;
 
 import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.service.chroma.client.ChromaDBClient;
-import com.example.aipcbuilder.service.helper.ChromaDataHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

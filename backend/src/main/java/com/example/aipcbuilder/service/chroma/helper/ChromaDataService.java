@@ -1,15 +1,14 @@
-package com.example.aipcbuilder.service.helper;
+package com.example.aipcbuilder.service.chroma.helper;
 
 import com.example.aipcbuilder.model.ChatMessage;
 import com.example.aipcbuilder.model.PcComponent;
-import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class ChromaDataHelper {
+public class ChromaDataService {
 
     public Map<String, Object> createComponentData(PcComponent component) {
         Map<String, Object> data = new HashMap<>();

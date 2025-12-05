@@ -1,9 +1,11 @@
-package com.example.aipcbuilder.service.helper;
+package com.example.aipcbuilder.service.build.helper;
 
 import com.example.aipcbuilder.dto.AIBuildRequest;
 import com.example.aipcbuilder.dto.AIBuildResponse;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.service.chroma.ChromaDBService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
@@ -14,63 +16,64 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class BuildGenerator {
+@Slf4j
+public class BuildGeneratorService {
 
     private final ChatClient chatClient;
     private final ChromaDBService chromaDBService;
-    private final ContextBuilderHelper contextBuilder;
-    private final PromptBuilder promptBuilder;
-    private final ComponentSelector componentSelector;
-    private final BuildResultMapper buildResultMapper;
+    private final ContextBuilderService contextBuilderService;
+    private final PromptBuilderService promptBuilderService;
+    private final ComponentSelectorService componentSelectorService;
+    private final BuildResultMapperService buildResultMapperService;
 
     private final String[] COMPONENT_ORDER = {"CPU", "MOTHERBOARD", "RAM", "GPU", "STORAGE", "PSU", "CASE"};
 
-    public BuildGenerator(ChatModel chatModel, ChromaDBService chromaDBService,
-                          ContextBuilderHelper contextBuilder, PromptBuilder promptBuilder,
-                          ComponentSelector componentSelector, BuildResultMapper buildResultMapper) {
+    public BuildGeneratorService(ChatModel chatModel, ChromaDBService chromaDBService,
+                                 ContextBuilderService contextBuilderService, PromptBuilderService promptBuilderService,
+                                 ComponentSelectorService componentSelectorService, BuildResultMapperService buildResultMapperService) {
         this.chatClient = ChatClient.create(chatModel);
         this.chromaDBService = chromaDBService;
-        this.contextBuilder = contextBuilder;
-        this.promptBuilder = promptBuilder;
-        this.componentSelector = componentSelector;
-        this.buildResultMapper = buildResultMapper;
+        this.contextBuilderService = contextBuilderService;
+        this.promptBuilderService = promptBuilderService;
+        this.componentSelectorService = componentSelectorService;
+        this.buildResultMapperService = buildResultMapperService;
     }
 
     public AIBuildResponse generateAIBuild(AIBuildRequest request) {
-        System.out.println("=== AI Build Generation Started ===");
-        System.out.println("Budget: $" + request.getBudget());
-        System.out.println("Requirements: " + request.getRequirements());
+        log.info("=== AI Build Generation Started ===");
+        log.info("Budget: ${}", request.getBudget());
+        log.info("Requirements: {}", request.getRequirements());
 
         Map<String, PcComponent> selectedComponents = new HashMap<>();
         int maxIterations = 3;
 
         for (int iteration = 1; iteration <= maxIterations; iteration++) {
-            System.out.println("=== Iteration " + iteration + " ===");
+            log.info("=== Iteration {} ===", iteration);
 
             selectedComponents = generateBuildIteration(request, selectedComponents, iteration);
-            double totalPrice = buildResultMapper.calculateTotalPrice(selectedComponents);
+            double totalPrice = buildResultMapperService.calculateTotalPrice(selectedComponents);
             double remainingBudget = request.getBudget() - totalPrice;
 
-            System.out.println("Total price: $" + totalPrice);
-            System.out.println("Remaining budget: $" + remainingBudget);
+            log.info("Total price: ${}", totalPrice);
+            log.info("Remaining budget: ${}", remainingBudget);
 
             if (remainingBudget >= 0) {
-                System.out.println("✓ Build within budget!");
-                Map<String, Long> componentIds = buildResultMapper.convertComponentsToIdMap(selectedComponents);
+                log.info("✓ Build within budget!");
+                Map<String, Long> componentIds = buildResultMapperService.convertComponentsToIdMap(selectedComponents);
                 return new AIBuildResponse(componentIds, "Build generated successfully within budget", true, "Success");
             }
 
             if (iteration == maxIterations) {
-                System.out.println("✗ Max iterations reached, returning best effort build");
+                log.warn("✗ Max iterations reached, returning best effort build");
                 break;
             }
 
             double overspentAmount = -remainingBudget;
-            System.out.println("Build exceeds budget by $" + overspentAmount + ", starting refinement iteration...");
+            log.info("Build exceeds budget by ${}, starting refinement iteration...", overspentAmount);
             request = createRefinementRequest(request, selectedComponents, overspentAmount, totalPrice);
         }
 
-        Map<String, Long> componentIds = buildResultMapper.convertComponentsToIdMap(selectedComponents);
+        Map<String, Long> componentIds = buildResultMapperService.convertComponentsToIdMap(selectedComponents);
         return new AIBuildResponse(componentIds, "Build generated but exceeds budget after refinements", true, "Best effort - budget exceeded");
     }
 
@@ -81,8 +84,8 @@ public class BuildGenerator {
         double remainingBudget = request.getBudget() != null ? request.getBudget() : Double.MAX_VALUE;
 
         for (String componentType : COMPONENT_ORDER) {
-            System.out.println("=== Selecting " + componentType + " (Iteration " + iteration + ") ===");
-            System.out.println("Remaining budget: $" + remainingBudget);
+            log.info("=== Selecting {} (Iteration {}) ===", componentType, iteration);
+            log.debug("Remaining budget: ${}", remainingBudget);
 
             PcComponent selectedComponent = selectComponentForType(
                     componentType,
@@ -98,9 +101,9 @@ public class BuildGenerator {
                 if (selectedComponent.getPrice() != null) {
                     remainingBudget -= selectedComponent.getPrice().doubleValue();
                 }
-                System.out.println("Selected: " + selectedComponent.getName() + " ($" + selectedComponent.getPrice() + ")");
+                log.info("Selected: {} (${})", selectedComponent.getName(), selectedComponent.getPrice());
             } else {
-                System.out.println("Could not find suitable " + componentType);
+                log.warn("Could not find suitable {}", componentType);
             }
         }
 
@@ -121,7 +124,7 @@ public class BuildGenerator {
         budgetFeedback.put("current_total_price", totalPrice);
         budgetFeedback.put("overspent_amount", overspentAmount);
         budgetFeedback.put("target_budget", originalRequest.getBudget());
-        budgetFeedback.put("instruction", promptBuilder.buildRefinementInstruction(overspentAmount, currentBuild));
+        budgetFeedback.put("instruction", promptBuilderService.buildRefinementInstruction(overspentAmount, currentBuild));
 
         refinedRequirements.put("BUDGET_FEEDBACK", budgetFeedback);
         return new AIBuildRequest(originalRequest.getBudget(), refinedRequirements);
@@ -134,22 +137,23 @@ public class BuildGenerator {
                                                PcComponent previousSelection,
                                                int iteration) {
         try {
-            String searchQuery = componentSelector.buildComponentSpecificQuery(
+            String searchQuery = componentSelectorService.buildComponentSpecificQuery(
                     componentType, requirements, alreadySelected, remainingBudget, iteration);
 
             List<Map<String, Object>> componentResults = chromaDBService.searchComponents(searchQuery, 5, componentType);
             List<Map<String, Object>> knowledgeResults = chromaDBService.searchAdminKnowledge(searchQuery, 3);
 
             if (componentResults.isEmpty()) {
+                log.warn("No components found for {}", componentType);
                 return null;
             }
 
             String context = buildSelectionContext(componentResults, knowledgeResults);
-            String systemPrompt = promptBuilder.buildComponentSelectionPrompt(
+            String systemPrompt = promptBuilderService.buildComponentSelectionPrompt(
                     componentType, context, iteration, previousSelection);
 
             List<String> remainingComponents = getRemainingComponents(componentType);
-            String userMessage = promptBuilder.buildComponentSelectionMessage(
+            String userMessage = promptBuilderService.buildComponentSelectionMessage(
                     componentType, requirements, alreadySelected, remainingBudget, iteration, remainingComponents);
 
             String response = chatClient.prompt()
@@ -158,13 +162,13 @@ public class BuildGenerator {
                     .call()
                     .content();
 
-            System.out.println(componentType + " selection response: " + response);
-            String componentId = componentSelector.parseComponentIdFromResponse(response, componentType);
+            log.debug("{} selection response: {}", componentType, response);
+            String componentId = componentSelectorService.parseComponentIdFromResponse(response, componentType);
 
-            return componentSelector.findComponentById(componentId, componentType);
+            return componentSelectorService.findComponentById(componentId, componentType);
 
         } catch (Exception e) {
-            System.err.println("Error selecting " + componentType + ": " + e.getMessage());
+            log.error("Error selecting {}: {}", componentType, e.getMessage());
             return null;
         }
     }
@@ -190,11 +194,11 @@ public class BuildGenerator {
 
         if (!componentResults.isEmpty()) {
             context.append("=== RELEVANT COMPONENTS ===\n");
-            context.append(contextBuilder.buildComponentContext(componentResults));
+            context.append(contextBuilderService.buildComponentContext(componentResults));
         }
 
         if (!knowledgeResults.isEmpty()) {
-            context.append(contextBuilder.buildKnowledgeContext(knowledgeResults));
+            context.append(contextBuilderService.buildKnowledgeContext(knowledgeResults));
         }
 
         return context.toString();

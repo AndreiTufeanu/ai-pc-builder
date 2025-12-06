@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.core.ParameterizedTypeReference;
 
 @Service
 @Slf4j
@@ -48,7 +49,7 @@ public class UserMessagesCollectionService {
             Map<String, Object> response = client.post(
                     SEARCH_ENDPOINT,
                     searchRequest,
-                    new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
+                    new ParameterizedTypeReference<>() {}
             );
             return (List<Map<String, Object>>) response.getOrDefault("results", List.of());
         } catch (Exception e) {

@@ -37,14 +37,6 @@ public class KnowledgeCollectionService {
         }
     }
 
-    public void addKnowledge(String content) {
-        Map<String, Object> metadata = Map.of(
-                "timestamp", Instant.now().toString(),
-                "source", "admin_training"
-        );
-        addKnowledge(content, "TRAINING", metadata);
-    }
-
     public void clear() {
         try {
             client.delete(CLEAR_ENDPOINT);

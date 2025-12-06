@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import org.springframework.core.ParameterizedTypeReference;
 import java.util.List;
 import java.util.Map;
 
@@ -47,7 +47,24 @@ public class KnowledgeCollectionService {
     }
 
     public List<Map<String, Object>> search(String query, int limit) {
-        return searchCollection(query, limit, COLLECTION_NAME);
+        Map<String, Object> searchRequest = Map.of(
+                "query", query,
+                "collection", COLLECTION_NAME,
+                "n_results", limit
+        );
+
+        try {
+            Map<String, Object> response = client.post(
+                    SEARCH_ENDPOINT,
+                    searchRequest,
+                    new ParameterizedTypeReference<>() {
+                    }
+            );
+            return (List<Map<String, Object>>) response.getOrDefault("results", List.of());
+        } catch (Exception e) {
+            log.error("Failed to search collection {}: {}", COLLECTION_NAME, e.getMessage());
+            return List.of();
+        }
     }
 
     public void syncMessages(List<ChatMessage> messages) {
@@ -59,25 +76,5 @@ public class KnowledgeCollectionService {
             addKnowledge(message.getUserMessage(), "TRAINING", metadata);
         });
         log.info("Synced {} admin knowledge messages", messages.size());
-    }
-
-    private List<Map<String, Object>> searchCollection(String query, int limit, String collection) {
-        Map<String, Object> searchRequest = Map.of(
-                "query", query,
-                "collection", collection,
-                "n_results", limit
-        );
-
-        try {
-            Map<String, Object> response = client.post(
-                    SEARCH_ENDPOINT,
-                    searchRequest,
-                    new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
-            );
-            return (List<Map<String, Object>>) response.getOrDefault("results", List.of());
-        } catch (Exception e) {
-            log.error("Failed to search collection {}: {}", collection, e.getMessage());
-            return List.of();
-        }
     }
 }

@@ -63,5 +63,6 @@ public class Build {
         this.name = name;
         this.description = description;
         this.budget = budget;
+        this.createdAt = LocalDateTime.now();
     }
 }

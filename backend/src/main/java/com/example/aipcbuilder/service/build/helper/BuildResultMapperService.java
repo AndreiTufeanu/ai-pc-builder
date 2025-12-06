@@ -1,7 +1,6 @@
 package com.example.aipcbuilder.service.build.helper;
 
 import com.example.aipcbuilder.model.PcComponent;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;

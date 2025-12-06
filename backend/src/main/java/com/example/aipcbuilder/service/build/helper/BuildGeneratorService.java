@@ -4,7 +4,6 @@ import com.example.aipcbuilder.dto.AIBuildRequest;
 import com.example.aipcbuilder.dto.AIBuildResponse;
 import com.example.aipcbuilder.model.PcComponent;
 import com.example.aipcbuilder.service.chroma.ChromaDBService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;

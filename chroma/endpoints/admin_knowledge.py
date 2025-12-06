@@ -1,8 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import uuid
-from datetime import datetime
 from models import AdminKnowledge
-import utils
 from chroma_client import admin_knowledge_collection
 
 router = APIRouter()

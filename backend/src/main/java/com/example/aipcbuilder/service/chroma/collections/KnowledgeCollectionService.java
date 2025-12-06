@@ -54,9 +54,7 @@ public class KnowledgeCollectionService {
         messages.forEach(message -> {
             Map<String, Object> metadata = Map.of(
                     "timestamp", message.getCreatedAt().toString(),
-                    "source", "admin_training",
-                    "message_id", message.getId().toString(),
-                    "admin_user_id", message.getUserId().toString()
+                    "source", "admin_training"
             );
             addKnowledge(message.getUserMessage(), "TRAINING", metadata);
         });

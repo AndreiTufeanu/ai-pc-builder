@@ -1,27 +1,7 @@
-import json
 from datetime import datetime
 from typing import Dict, Any
 from models import ComponentData
 import constants
-
-def flatten_specifications(specs: Dict[str, Any]) -> Dict[str, Any]:
-    """Flatten nested specifications for ChromaDB metadata"""
-    flattened = {}
-
-    for key, value in specs.items():
-        if value is None:
-            flattened[key] = None
-        elif isinstance(value, (str, int, float, bool)):
-            flattened[key] = value
-        elif isinstance(value, dict):
-            flattened[key] = json.dumps(value)
-        elif isinstance(value, list):
-            flattened[key] = json.dumps(value)
-        else:
-            flattened[key] = str(value)
-
-    return flattened
-
 
 def create_component_document(component: ComponentData) -> str:
     """Create a searchable document string based on component type"""

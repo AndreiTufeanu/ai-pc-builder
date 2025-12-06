@@ -13,16 +13,12 @@ async def add_admin_knowledge(knowledge: AdminKnowledge):
     try:
         knowledge_id = str(uuid.uuid4())
 
-        # Flatten metadata for admin knowledge
-        flattened_metadata = utils.flatten_specifications(knowledge.metadata)
-
         admin_knowledge_collection.add(
             documents=[knowledge.content],
             metadatas=[{
                 "knowledge_type": knowledge.knowledge_type,
                 "source": "admin_training",
-                "added_at": datetime.now().isoformat(),
-                **flattened_metadata
+                **knowledge.metadata,
             }],
             ids=[knowledge_id]
         )

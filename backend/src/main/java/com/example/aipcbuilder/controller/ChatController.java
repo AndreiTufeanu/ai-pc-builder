@@ -8,6 +8,7 @@ import com.example.aipcbuilder.service.chroma.ChromaDBService;
 import com.example.aipcbuilder.service.build.PCBuilderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,7 @@ import java.util.List;
 @RequestMapping("/api/chat")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@Slf4j
 public class ChatController {
 
     private final PCBuilderService pcBuilderService;
@@ -25,12 +27,12 @@ public class ChatController {
 
     @PostMapping
     public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
-        System.out.println("Chat request from user ID: " + request.getUserId() + ", Message: " + request.getMessage());
+        log.info("Chat request from user ID: {}, Message: {}", request.getUserId(), request.getMessage());
 
         String aiResponse = pcBuilderService.getChatResponse(request.getMessage(), request.getUserId());
         ChatMessage savedMessage = chatMessageService.saveChatMessage(request.getUserId(), request.getMessage(), aiResponse);
 
-        System.out.println("Chat message saved with ID: " + savedMessage.getId());
+        log.info("Chat message saved with ID: {}", savedMessage.getId());
 
         List<ChatMessage> userMessages = chatMessageService.getUserChatHistory(request.getUserId());
         chromaDBService.syncLatestUserMessages(userMessages);

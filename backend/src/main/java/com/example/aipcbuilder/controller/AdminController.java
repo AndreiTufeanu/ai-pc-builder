@@ -10,6 +10,7 @@ import com.example.aipcbuilder.service.build.PCBuilderService;
 import com.example.aipcbuilder.utils.ResponseHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ import java.util.Map;
 @RequestMapping("/api/admin")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@Slf4j
 public class AdminController {
 
     private final ComponentService componentService;
@@ -31,10 +33,10 @@ public class AdminController {
     public ResponseEntity<List<PcComponent>> getAllComponents() {
         try {
             List<PcComponent> components = componentService.getAllComponents();
-            System.out.println("Found " + components.size() + " components in database");
+            log.info("Found {} components in database", components.size());
             return ResponseEntity.ok(components);
         } catch (Exception e) {
-            System.err.println("Error fetching components: " + e.getMessage());
+            log.error("Error fetching components: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -42,17 +44,17 @@ public class AdminController {
     @PostMapping("/components")
     public ResponseEntity<?> addComponent(@RequestBody Map<String, Object> requestData) {
         try {
-            System.out.println("Received component data: " + requestData);
+            log.debug("Received component data: {}", requestData);
 
             PcComponent savedComponent = componentService.createComponent(requestData);
-            System.out.println("Component saved with ID: " + savedComponent.getId());
+            log.info("Component saved with ID: {}", savedComponent.getId());
 
             return ResponseEntity.ok(savedComponent);
 
         } catch (IllegalArgumentException e) {
             return responseHelper.badRequest(e.getMessage());
         } catch (Exception e) {
-            System.err.println("Error adding component: " + e.getMessage());
+            log.error("Error adding component: {}", e.getMessage(), e);
             return responseHelper.internalServerError("Error adding component: " + e.getMessage());
         }
     }
@@ -60,17 +62,17 @@ public class AdminController {
     @PutMapping("/components/{id}")
     public ResponseEntity<?> updateComponent(@PathVariable Long id, @RequestBody Map<String, Object> requestData) {
         try {
-            System.out.println("Updating component with ID: " + id);
+            log.info("Updating component with ID: {}", id);
 
             return componentService.updateComponent(id, requestData)
                     .map(updatedComponent -> {
-                        System.out.println("Component updated successfully: " + updatedComponent.getName());
+                        log.info("Component updated successfully: {}", updatedComponent.getName());
                         return ResponseEntity.ok(updatedComponent);
                     })
                     .orElse(ResponseEntity.notFound().build());
 
         } catch (Exception e) {
-            System.err.println("Error updating component: " + e.getMessage());
+            log.error("Error updating component with ID {}: {}", id, e.getMessage(), e);
             return responseHelper.internalServerError("Error updating component: " + e.getMessage());
         }
     }
@@ -83,11 +85,11 @@ public class AdminController {
                 return ResponseEntity.notFound().build();
             }
 
-            System.out.println("Component deleted successfully: " + id);
+            log.info("Component deleted successfully: {}", id);
             return ResponseEntity.ok().build();
 
         } catch (Exception e) {
-            System.err.println("Error deleting component: " + e.getMessage());
+            log.error("Error deleting component with ID {}: {}", id, e.getMessage(), e);
             return responseHelper.internalServerError("Error deleting component: " + e.getMessage());
         }
     }
@@ -99,19 +101,20 @@ public class AdminController {
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
-            System.err.println("Error fetching component: " + e.getMessage());
+            log.error("Error fetching component with ID {}: {}", id, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }
 
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> adminChat(@Valid @RequestBody ChatRequest request) {
-        System.out.println("Admin chat message from user ID: " + request.getUserId() + ", Message: " + request.getMessage());
+        log.info("Admin chat message from user ID: {}, Message: {}",
+                request.getUserId(), request.getMessage());
 
         String response = pcBuilderService.getAdminTrainingResponse(request.getMessage());
         ChatMessage savedMessage = chatMessageService.saveChatMessage(request.getUserId(), request.getMessage(), response);
 
-        System.out.println("Admin chat message saved with ID: " + savedMessage.getId());
+        log.info("Admin chat message saved with ID: {}", savedMessage.getId());
         return ResponseEntity.ok(new ChatResponse(response, savedMessage.getId()));
     }
 }

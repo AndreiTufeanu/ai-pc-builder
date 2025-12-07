@@ -22,7 +22,7 @@ public class ComponentService {
     private final ComponentUtils componentUtils;
 
     public List<PcComponent> getAllComponents() {
-        return componentRepository.findAllByOrderByNameAsc();
+        return componentRepository.findAllByOrderByTypeManufacturerId();
     }
 
     public Optional<PcComponent> getComponentById(Long id) {

@@ -31,8 +31,7 @@ public class ContextBuilderService {
             context.append("\n=== PREVIOUS CONVERSATION ===\n");
             for (Map<String, Object> result : userContextResults) {
                 String doc = (String) result.get("document");
-                String preview = doc.lines().limit(3).collect(Collectors.joining("\n"));
-                context.append("- ").append(preview).append("\n");
+                context.append("- ").append(doc).append("\n");
             }
         }
 

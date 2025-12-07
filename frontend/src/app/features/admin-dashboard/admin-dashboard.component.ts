@@ -135,10 +135,13 @@ export class AdminDashboardComponent {
     // Initialize specifications object
     const newSpecs: { [key: string]: any } = {};
     specs.forEach(spec => {
-      if (spec.type === 'checkbox-group') {
+      // Preserve existing values if they exist
+      if (this.componentForm.specifications.hasOwnProperty(spec.name)) {
+        newSpecs[spec.name] = this.componentForm.specifications[spec.name];
+      } else if (spec.type === 'checkbox-group') {
         newSpecs[spec.name] = [];
       } else {
-        newSpecs[spec.name] = this.componentForm.specifications[spec.name] || '';
+        newSpecs[spec.name] = '';
       }
     });
     this.componentForm.specifications = newSpecs;
@@ -160,6 +163,41 @@ export class AdminDashboardComponent {
   }
 
   openEditComponent(component: PcComponent): void {
+    // First, parse the specifications to extract numeric values from strings with units
+    const parsedSpecifications: { [key: string]: any } = {};
+
+    // Get the specs for this component type
+    const specs = this.componentService.getSpecsForType(component.type);
+
+    // Parse each specification
+    for (const spec of specs) {
+      const storedValue = component.specifications[spec.name];
+
+      if (storedValue !== undefined && storedValue !== null) {
+        if (spec.type === 'number' && spec.unit) {
+          // Extract numeric value from string like "16 GB" or "2300 MHz"
+          // Remove the unit and any whitespace, convert to number
+          const match = String(storedValue).match(/^([\d.]+)/);
+          if (match) {
+            parsedSpecifications[spec.name] = parseFloat(match[1]);
+          } else {
+            parsedSpecifications[spec.name] = '';
+          }
+        } else if (spec.type === 'checkbox-group') {
+          // Ensure checkbox groups are arrays
+          parsedSpecifications[spec.name] = Array.isArray(storedValue)
+            ? storedValue
+            : [storedValue];
+        } else {
+          // For other types, use as-is
+          parsedSpecifications[spec.name] = storedValue;
+        }
+      } else {
+        // If no value, set to empty string
+        parsedSpecifications[spec.name] = '';
+      }
+    }
+
     this.componentForm = {
       name: component.name,
       type: component.type,
@@ -167,10 +205,10 @@ export class AdminDashboardComponent {
       manufacturer: component.manufacturer || '',
       model: component.model || '',
       description: component.description || '',
-      specifications: { ...component.specifications }
+      specifications: parsedSpecifications
     };
     this.editingComponent.set(component);
-    this.onTypeChange(); // Initialize specs for component type
+    this.onTypeChange();
     this.showComponentForm.set(true);
   }
 

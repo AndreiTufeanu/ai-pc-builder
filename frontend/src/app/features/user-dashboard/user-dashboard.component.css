@@ -440,7 +440,10 @@
 }
 
 .message-content {
-  padding: clamp(36px, 2vh, 15px);
+  padding-left: clamp(72px, 2vh, 36px);
+  padding-right: clamp(72px, 2vw, 36px);
+  padding-top: 24px;
+  padding-bottom: 24px;
   border-radius: clamp(10px, 1.5vw, 12px);
   margin-bottom: 5px;
   font-size: clamp(0.9rem, 1.5vw, 1rem);

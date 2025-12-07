@@ -2,7 +2,7 @@
   <!-- Header -->
   <header class="dashboard-header">
     <div class="user-info">
-      <h1>Welcome, {{ authService.currentUser()?.username }}! 👋</h1>
+      <h1>Welcome, {{ authService.currentUser()?.username }}!</h1>
       <p>Let's build your perfect PC together</p>
     </div>
   </header>
@@ -10,14 +10,14 @@
   <!-- Tab Navigation -->
   <nav class="tab-nav">
     <button class="tab-button" [class.active]="activeTab() === 'guided'" (click)="setActiveTab('guided')">
-      🛠️ Guided Build
+      <i class="fa-solid fa-screwdriver-wrench"></i> Guided Build
     </button>
     <button class="tab-button" [class.active]="activeTab() === 'chat'" (click)="setActiveTab('chat')">
-      💬 AI Chat
+      <i class="fa-solid fa-comment-dots"></i> AI Chat
     </button>
     <button class="tab-button" [class.active]="activeTab() === 'builds'"
       (click)="setActiveTab('builds'); loadUserBuilds()">
-      📋 My Builds
+      <i class="fa-solid fa-clipboard-list"></i> My Builds
     </button>
   </nav>
 
@@ -50,7 +50,7 @@
         </button>
         }
         <button class="step-button summary" [class.active]="currentStep() === 'summary'" (click)="goToStep('summary')">
-          📋 Summary
+          <i class="fa-solid fa-clipboard-list"></i> Summary
         </button>
       </div>
 
@@ -149,16 +149,16 @@
 
           <div class="summary-actions">
             <button class="btn btn-secondary" (click)="clearRequirements()">
-              🗑️ Clear All
+              <i class="fa-solid fa-trash"></i> Clear All
             </button>
             <!-- CHANGED: Button text to "Generate Build" -->
             <button class="btn btn-primary" (click)="generateBuild()"
               [disabled]="isGeneratingBuild() || !buildName().trim()">
               @if (!isGeneratingBuild()) {
-              🚀 Generate Build
+              <i class="fa-solid fa-rocket"></i> Generate Build
               }
               @if (isGeneratingBuild()) {
-              ⏳ Generating...
+              <i class="fa-solid fa-hourglass"></i> Generating...
               }
             </button>
           </div>
@@ -170,12 +170,12 @@
       <div class="step-controls">
         @if (currentStep() !== 'CPU') {
         <button class="btn btn-outline" (click)="previousStep()">
-          ← Previous
+          <i class="fa-solid fa-arrow-left"></i> Previous
         </button>
         }
         @if (currentStep() !== 'summary') {
         <button class="btn btn-primary" (click)="nextStep()">
-          Next →
+          Next <i class="fa-solid fa-arrow-right"></i>
         </button>
         }
       </div>
@@ -237,7 +237,7 @@
         <h3>No builds yet</h3>
         <p>Generate your first PC build using the Guided Build tool!</p>
         <button class="btn btn-primary" (click)="activeTab.set('guided')">
-          🛠️ Start Guided Build
+          <i class="fa-solid fa-screwdriver-wrench"></i> Start Guided Build
         </button>
       </div>
       } @else {
@@ -302,7 +302,7 @@
           </div>
           <div class="build-actions">
             <button class="btn btn-outline btn-sm" (click)="deleteBuild(build)">
-              🗑️ Delete
+              <i class="fa-solid fa-trash"></i> Delete
             </button>
           </div>
         </div>

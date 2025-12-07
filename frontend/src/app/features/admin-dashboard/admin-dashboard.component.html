@@ -8,10 +8,10 @@
   <!-- Tab Navigation -->
   <nav class="tab-nav">
     <button class="tab-button" [class.active]="activeTab() === 'components'" (click)="setActiveTab('components')">
-      🖥️ Manage Components
+      <i class="fa-solid fa-computer"></i> Manage Components
     </button>
     <button class="tab-button" [class.active]="activeTab() === 'chat'" (click)="setActiveTab('chat')">
-      🤖 AI Training Chat
+      <i class="fa-solid fa-robot"></i> AI Training Chat
     </button>
   </nav>
 
@@ -21,7 +21,7 @@
     <div class="section-header">
       <h2>PC Components Management</h2>
       <button class="btn btn-primary" (click)="openAddComponentForm()">
-        ➕ Add New Component
+        <i class="fa-solid fa-plus"></i> Add New Component
       </button>
     </div>
 
@@ -179,10 +179,10 @@
 
         <div class="component-actions">
           <button class="btn btn-outline btn-sm" (click)="openEditComponent(component)">
-            ✏️ Edit
+            <i class="fa-solid fa-pen"></i> Edit
           </button>
           <button class="btn btn-danger btn-sm" (click)="deleteComponent(component)">
-            🗑️ Delete
+            <i class="fa-solid fa-trash"></i> Delete
           </button>
         </div>
       </div>

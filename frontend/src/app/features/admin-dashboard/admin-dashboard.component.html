@@ -204,8 +204,7 @@
       <div class="chat-messages">
         @for (message of chatMessages(); track $index) {
         <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
-          <div class="message-content">
-            {{ message.content }}
+          <div class="message-content" [innerHTML]="formatMessage(message.content)">
           </div>
           <div class="message-role">
             {{ message.role === 'user' ? 'You' : 'AI Assistant' }}

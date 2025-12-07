@@ -426,7 +426,7 @@
 }
 
 .message {
-  margin-bottom: 18px; /* Reduced margin */
+  margin-bottom: 18px;
   max-width: 80%;
   min-width: 0;
 }
@@ -440,7 +440,7 @@
 }
 
 .message-content {
-  padding: clamp(12px, 2vh, 15px);
+  padding: clamp(36px, 2vh, 15px);
   border-radius: clamp(10px, 1.5vw, 12px);
   margin-bottom: 5px;
   font-size: clamp(0.9rem, 1.5vw, 1rem);

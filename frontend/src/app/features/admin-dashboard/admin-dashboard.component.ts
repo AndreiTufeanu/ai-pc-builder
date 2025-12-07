@@ -6,6 +6,7 @@ import { ComponentService } from '../../core/services/component.service';
 import { ChatService } from '../../core/services/chat.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Subscription } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -44,7 +45,8 @@ export class AdminDashboardComponent {
   constructor(
     private componentService: ComponentService,
     private chatService: ChatService,
-    private authService: AuthService
+    private authService: AuthService,
+    private sanitizer: DomSanitizer
   ) {
     this.loadComponents();
   }
@@ -55,6 +57,20 @@ export class AdminDashboardComponent {
 
   ngOnDestroy(): void {
     this.chatSubscription?.unsubscribe();
+  }
+
+  formatMessage(content: string): SafeHtml {
+    if (!content) return '';
+
+    // Convert markdown to HTML
+    let formatted = content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^\s*\*\s+/gm, '<li>')
+      .replace(/^\s*(\d+)\.\s+/gm, '<li>$1. ')
+      .replace(/\n/g, '<br>')
+      .replace(/(<li>.*?(?:<br>|$))/gs, '<ul>$1</ul>');
+
+    return this.sanitizer.bypassSecurityTrustHtml(formatted);
   }
 
   loadChatHistory(): void {

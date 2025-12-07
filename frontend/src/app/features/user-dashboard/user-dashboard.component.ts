@@ -2,15 +2,14 @@ import { Component, signal, ViewChildren, QueryList, ElementRef, AfterViewChecke
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
-import { Build } from '../../core/models/component.model';
 import { BuildRequest } from '../../core/models/component.model';
 import { BuildWithComponents } from '../../core/models/component.model';
-import { PcComponent } from '../../core/models/component.model';
 import { ComponentService } from '../../core/services/component.service';
 import { ComponentSpec } from '../../core/models/component.model';
 import { ComponentType } from '../../core/models/component.model';
 import { ChatService } from '../../core/services/chat.service';
 import { Subscription } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 interface BuildRequirement {
   type: ComponentType;
@@ -51,7 +50,8 @@ export class UserDashboardComponent implements AfterViewChecked {
   constructor(
     public authService: AuthService,
     private componentService: ComponentService,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private sanitizer: DomSanitizer
   ) {
     this.initializeBuildRequirements();
   }
@@ -71,6 +71,20 @@ export class UserDashboardComponent implements AfterViewChecked {
     });
     this.buildRequirements.set(initialRequirements);
     this.updateCurrentRequirements();
+  }
+
+  formatMessage(content: string): SafeHtml {
+    if (!content) return '';
+
+    // Convert markdown to HTML
+    let formatted = content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^\s*\*\s+/gm, '<li>')
+      .replace(/^\s*(\d+)\.\s+/gm, '<li>$1. ')
+      .replace(/\n/g, '<br>')
+      .replace(/(<li>.*?(?:<br>|$))/gs, '<ul>$1</ul>');
+
+    return this.sanitizer.bypassSecurityTrustHtml(formatted);
   }
 
   loadChatHistory(): void {

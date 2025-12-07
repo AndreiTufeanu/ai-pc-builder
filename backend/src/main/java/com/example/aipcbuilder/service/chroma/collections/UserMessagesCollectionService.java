@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,12 +39,12 @@ public class UserMessagesCollectionService {
         }
     }
 
-    public List<Map<String, Object>> search(String query, int limit) {
-        Map<String, Object> searchRequest = Map.of(
-                "query", query,
-                "collection", COLLECTION_NAME,
-                "n_results", limit
-        );
+    public List<Map<String, Object>> searchByUser(String query, Long userId, int limit) {
+        Map<String, Object> searchRequest = new HashMap<>();
+        searchRequest.put("query", query);
+        searchRequest.put("collection", COLLECTION_NAME);
+        searchRequest.put("n_results", limit);
+        searchRequest.put("where", Map.of("user_id", userId.toString()));
 
         try {
             Map<String, Object> response = client.post(
@@ -53,22 +54,9 @@ public class UserMessagesCollectionService {
             );
             return (List<Map<String, Object>>) response.getOrDefault("results", List.of());
         } catch (Exception e) {
-            log.error("Failed to search user messages: {}", e.getMessage());
+            log.error("Failed to search user messages for user {}: {}", userId, e.getMessage());
             return List.of();
         }
-    }
-
-    public List<Map<String, Object>> searchByUser(String query, Long userId, int limit) {
-        List<Map<String, Object>> results = search(query, limit * 2);
-
-        return results.stream()
-                .filter(result -> {
-                    Map<String, Object> metadata = (Map<String, Object>) result.get("metadata");
-                    String resultUserId = (String) metadata.get("user_id");
-                    return userId.toString().equals(resultUserId);
-                })
-                .limit(limit)
-                .collect(Collectors.toList());
     }
 
     public void cleanup() {

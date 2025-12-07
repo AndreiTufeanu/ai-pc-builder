@@ -24,8 +24,7 @@ async def cleanup_user_messages() -> int:
                     messages_by_user[user_id] = []
                 messages_by_user[user_id].append({
                     'id': message_id,
-                    'created_at': metadata.get('created_at', ''),
-                    'metadata': metadata
+                    'created_at': metadata.get('created_at', '')
                 })
 
         # Identify messages to delete (beyond 50 per user)

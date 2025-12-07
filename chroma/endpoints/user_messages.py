@@ -74,8 +74,7 @@ async def upsert_user_messages(messages: List[UserMessageData]):
                 "user_message": message.user_message,
                 "ai_response": message.ai_response,
                 "created_at": message.created_at,
-                "source": "user_chat",
-                "updated_at": datetime.now().isoformat()
+                "source": "user_chat"
             }
 
             metadatas.append(metadata)
@@ -104,10 +103,17 @@ async def upsert_user_messages(messages: List[UserMessageData]):
 async def cleanup_on_startup():
     """Clean up collections on application startup"""
     try:
-        user_messages_cleanup_count = await cleanup_user_messages()
+        # Get all user message IDs
+        all_data = user_messages_collection.get()
+        if all_data['ids']:
+            user_messages_collection.delete(ids=all_data['ids'])
+            return {
+                "message": f"Cleared {len(all_data['ids'])} user messages on startup",
+                "user_messages_removed": len(all_data['ids'])
+            }
         return {
-            "message": "Startup cleanup completed",
-            "user_messages_removed": user_messages_cleanup_count
+            "message": "No user messages to clear on startup",
+            "user_messages_removed": 0
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during startup cleanup: {str(e)}")

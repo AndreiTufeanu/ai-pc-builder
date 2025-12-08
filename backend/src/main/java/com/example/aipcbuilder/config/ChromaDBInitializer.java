@@ -27,7 +27,7 @@ public class ChromaDBInitializer implements CommandLineRunner {
     public void run(String... args) {
         // Perform startup cleanup first
         log.info("Performing ChromaDB startup cleanup...");
-        chromaDBService.performStartupCleanup();
+        chromaDBService.cleanupUserMessages();
 
         // Sync all components
         List<PcComponent> components = componentRepository.findAll();

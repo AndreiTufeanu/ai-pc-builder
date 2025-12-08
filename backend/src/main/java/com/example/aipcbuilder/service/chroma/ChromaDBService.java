@@ -55,6 +55,7 @@ public class ChromaDBService {
         knowledgeCollection.syncMessages(adminMessages);
     }
 
+    // User messages operations
     public List<Map<String, Object>> searchUserMessagesByUser(String query, Long userId, int nResults) {
         return userMessagesCollection.searchByUser(query, userId, nResults);
     }
@@ -63,11 +64,11 @@ public class ChromaDBService {
         userMessagesCollection.syncLatest(messages);
     }
 
-    // Health and maintenance operations
-    public void performStartupCleanup() {
+    public void cleanupUserMessages() {
         userMessagesCollection.cleanup();
     }
 
+    // Health and maintenance operations
     public String getChromaDbStatus() {
         return client.getStatus();
     }

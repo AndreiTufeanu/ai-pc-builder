@@ -261,6 +261,12 @@ public class PromptBuilderService {
             
             %s
             
+            HARD CONSTRAINTS (must obey):
+            1) Do NOT invent, infer, or introduce any brand, model, or part number not present in that block.
+            2) When suggesting components, reference them by their exact name as listed (case-sensitive).
+            3) Do not provide alternatives from your own knowledge or memory — only use the provided list.
+            4) You MUST only mention components that appear verbatim in the "=== AVAILABLE COMPONENTS ===" section below.
+            
             Available Components, Knowledge, and Conversation Context:
             %s
             

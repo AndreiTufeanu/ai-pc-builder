@@ -87,7 +87,7 @@ public class ComponentSelectorService {
                     String gpuTdp = getSpec(alreadySelected.get("gpu"), "tdp");
                     String cpuTdp = getSpec(alreadySelected.get("cpu"), "tdp");
                     if (connectors != null) query.append(connectors).append(" ");
-                    if (gpuTdp != null && cpuTdp != null) query.append(estimateTotalPower(gpuTdp, cpuTdp)).append("W ");
+                    if (gpuTdp != null && cpuTdp != null) query.append(">=").append(estimateTotalPower(gpuTdp, cpuTdp)).append("W ");
                 }
                 break;
             case "RAM":

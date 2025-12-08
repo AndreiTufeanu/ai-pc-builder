@@ -46,6 +46,7 @@ public class KnowledgeCollectionService {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public List<Map<String, Object>> search(String query, int limit) {
         Map<String, Object> searchRequest = Map.of(
                 "query", query,

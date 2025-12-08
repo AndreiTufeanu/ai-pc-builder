@@ -52,6 +52,7 @@ public class ComponentCollectionService {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public List<Map<String, Object>> search(String query, int limit, String componentType) {
         Map<String, Object> searchRequest = new HashMap<>();
         searchRequest.put("query", query);

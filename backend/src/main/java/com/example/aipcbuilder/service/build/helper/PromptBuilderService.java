@@ -169,6 +169,7 @@ public class PromptBuilderService {
         // Add specific requirements for this component
         if (requirements != null && requirements.containsKey(componentType.toUpperCase())) {
             Map<String, Object> componentReqs = requirements.get(componentType.toUpperCase());
+            @SuppressWarnings("unchecked")
             Map<String, Object> specs = (Map<String, Object>) componentReqs.get("specifications");
             if (specs != null && !specs.isEmpty()) {
                 message.append("Specific Requirements:\n");

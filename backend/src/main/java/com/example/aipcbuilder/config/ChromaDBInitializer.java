@@ -25,8 +25,8 @@ public class ChromaDBInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Perform startup cleanup first
-        log.info("Performing ChromaDB startup cleanup...");
+        // Messages cleanup
+        log.info("Starting ChromaDB initialization...");
         chromaDBService.cleanupUserMessages();
 
         // Sync all components

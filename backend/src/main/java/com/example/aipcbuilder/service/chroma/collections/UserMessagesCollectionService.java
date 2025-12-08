@@ -39,6 +39,7 @@ public class UserMessagesCollectionService {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public List<Map<String, Object>> searchByUser(String query, Long userId, int limit) {
         Map<String, Object> searchRequest = new HashMap<>();
         searchRequest.put("query", query);

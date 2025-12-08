@@ -66,6 +66,7 @@ public class ComponentSelectorService {
         query.append("Budget $").append(remainingBudget).append(" ");
 
         if (requirements != null && requirements.containsKey(componentType.toUpperCase())) {
+            @SuppressWarnings("unchecked")
             Map<String, Object> specs = (Map<String, Object>) requirements.get(componentType.toUpperCase()).get("specifications");
             if (specs != null) specs.values().stream().filter(Objects::nonNull).forEach(v -> query.append(v).append(" "));
         }
@@ -78,7 +79,7 @@ public class ComponentSelectorService {
     private void addCompatibilityKeywords(StringBuilder query, String componentType, Map<String, PcComponent> alreadySelected) {
         Map<String, Integer> sizeRank = Map.of("E-ATX", 4, "ATX", 3, "MATX", 2, "ITX", 1);
         Map<String, String> ramTypes = Map.of("AM4", "DDR4", "AM5", "DDR5", "LGA1851", "DDR5", "LGA1700", "DDR4 DDR5");
-
+        String socket;
         switch (componentType.toUpperCase()) {
             case "PSU":
                 if (alreadySelected.containsKey("gpu")) {
@@ -90,7 +91,7 @@ public class ComponentSelectorService {
                 }
                 break;
             case "RAM":
-                String socket = getSpec(alreadySelected.get("cpu"), "socket");
+                socket = getSpec(alreadySelected.get("cpu"), "socket");
                 if (socket != null && ramTypes.containsKey(socket.toUpperCase())) query.append(ramTypes.get(socket.toUpperCase())).append(" ");
                 break;
             case "MOTHERBOARD":

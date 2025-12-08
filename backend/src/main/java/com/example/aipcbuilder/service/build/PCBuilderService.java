@@ -32,7 +32,7 @@ public class PCBuilderService {
         log.info("Message: {}", userMessage);
         log.info("User ID: {}", userId);
 
-        List<Map<String, Object>> componentResults = chromaDBService.searchComponents(userMessage, 3, null);
+        List<Map<String, Object>> componentResults = chromaDBService.searchComponents(userMessage, 10, null);
         List<Map<String, Object>> knowledgeResults = chromaDBService.searchAdminKnowledge(userMessage, 2);
         List<Map<String, Object>> userContextResults = chromaDBService.searchUserMessagesByUser(userMessage, userId, 3);
 

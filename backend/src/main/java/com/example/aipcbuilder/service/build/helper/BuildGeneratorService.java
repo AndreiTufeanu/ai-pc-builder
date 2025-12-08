@@ -49,7 +49,7 @@ public class BuildGeneratorService {
         for (int iteration = 1; iteration <= maxIterations; iteration++) {
             log.info("=== Iteration {} ===", iteration);
 
-            selectedComponents = generateBuildIteration(request, selectedComponents, iteration);
+            selectedComponents = generateBuildIteration(request, iteration);
             double totalPrice = buildResultMapperService.calculateTotalPrice(selectedComponents);
             double remainingBudget = request.getBudget() - totalPrice;
 
@@ -69,7 +69,7 @@ public class BuildGeneratorService {
 
             double overspentAmount = -remainingBudget;
             log.info("Build exceeds budget by ${}, starting refinement iteration...", overspentAmount);
-            request = createRefinementRequest(request, selectedComponents, overspentAmount, totalPrice);
+            request = createRefinementRequest(request, overspentAmount, totalPrice);
         }
 
         Map<String, Long> componentIds = buildResultMapperService.convertComponentsToIdMap(selectedComponents);
@@ -77,7 +77,6 @@ public class BuildGeneratorService {
     }
 
     private Map<String, PcComponent> generateBuildIteration(AIBuildRequest request,
-                                                            Map<String, PcComponent> previousSelection,
                                                             int iteration) {
         Map<String, PcComponent> selectedComponents = new HashMap<>();
         double remainingBudget = request.getBudget() != null ? request.getBudget() : Double.MAX_VALUE;
@@ -91,7 +90,6 @@ public class BuildGeneratorService {
                     request.getRequirements(),
                     selectedComponents,
                     remainingBudget,
-                    previousSelection.get(componentType.toLowerCase()),
                     iteration
             );
 
@@ -110,7 +108,6 @@ public class BuildGeneratorService {
     }
 
     private AIBuildRequest createRefinementRequest(AIBuildRequest originalRequest,
-                                                   Map<String, PcComponent> currentBuild,
                                                    double overspentAmount,
                                                    double totalPrice) {
         Map<String, Map<String, Object>> refinedRequirements = new HashMap<>();
@@ -123,7 +120,7 @@ public class BuildGeneratorService {
         budgetFeedback.put("current_total_price", totalPrice);
         budgetFeedback.put("overspent_amount", overspentAmount);
         budgetFeedback.put("target_budget", originalRequest.getBudget());
-        budgetFeedback.put("instruction", promptBuilderService.buildRefinementInstruction(overspentAmount, currentBuild));
+        budgetFeedback.put("instruction", promptBuilderService.buildRefinementInstruction(overspentAmount));
 
         refinedRequirements.put("BUDGET_FEEDBACK", budgetFeedback);
         return new AIBuildRequest(originalRequest.getBudget(), refinedRequirements);
@@ -133,7 +130,6 @@ public class BuildGeneratorService {
                                                Map<String, Map<String, Object>> requirements,
                                                Map<String, PcComponent> alreadySelected,
                                                double remainingBudget,
-                                               PcComponent previousSelection,
                                                int iteration) {
         try {
             String searchQuery = componentSelectorService.buildComponentSpecificQuery(
@@ -149,11 +145,11 @@ public class BuildGeneratorService {
 
             String context = buildSelectionContext(componentResults, knowledgeResults);
             String systemPrompt = promptBuilderService.buildComponentSelectionPrompt(
-                    componentType, context, iteration, previousSelection);
+                    componentType, context, iteration, alreadySelected);
 
             List<String> remainingComponents = getRemainingComponents(componentType);
             String userMessage = promptBuilderService.buildComponentSelectionMessage(
-                    componentType, requirements, alreadySelected, remainingBudget, iteration, remainingComponents);
+                    componentType, requirements, remainingBudget, iteration, remainingComponents);
 
             String response = chatClient.prompt()
                     .system(systemPrompt)

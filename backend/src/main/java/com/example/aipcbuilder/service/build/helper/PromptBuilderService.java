@@ -14,17 +14,18 @@ public class PromptBuilderService {
             "CPU", "GPU", "PSU", "RAM", "MOTHERBOARD", "STORAGE", "CASE"
     );
 
-    public String buildComponentSelectionPrompt(String componentType, String context, int iteration, PcComponent previousSelection) {
+    public String buildComponentSelectionPrompt(String componentType, String context, int iteration, Map<String, PcComponent> alreadySelected) {
         String compatibilityRules = buildCompatibilityRules(componentType);
 
         if (iteration == 1) {
-            return buildInitialSelectionPrompt(componentType, context, compatibilityRules);
+            return buildInitialSelectionPrompt(componentType, context, compatibilityRules, alreadySelected);
         } else {
-            return buildRefinementPrompt(componentType, context, previousSelection, compatibilityRules);
+            return buildRefinementPrompt(componentType, context, compatibilityRules, alreadySelected);
         }
     }
 
-    private String buildInitialSelectionPrompt(String componentType, String context, String compatibilityRules) {
+    private String buildInitialSelectionPrompt(String componentType, String context, String compatibilityRules, Map<String, PcComponent> alreadySelected) {
+        String selectedComponents = buildAlreadySelectedContext(alreadySelected);
         return """
             You are an expert PC building AI assistant. Your task is to select the best %s from the available options.
             
@@ -39,6 +40,8 @@ public class PromptBuilderService {
             7. Do NOT return the component name or any other text.
             8. **CRITICAL: Your response must contain ONLY the component ID, NO other text, NO explanations, NO reasoning.**
             
+            %s
+            
             ===== AVAILABLE %s OPTIONS =====
             %s
             
@@ -48,13 +51,11 @@ public class PromptBuilderService {
             
             **ANY OTHER TEXT IN YOUR RESPONSE WILL CAUSE THE BUILD TO FAIL.**
             **YOU CANNOT USE COMPONENTS NOT IN THIS LIST.**
-            """.formatted(componentType, compatibilityRules, componentType, context);
+            """.formatted(componentType, compatibilityRules, selectedComponents, componentType, context);
     }
 
-    private String buildRefinementPrompt(String componentType, String context, PcComponent previousSelection, String compatibilityRules) {
-        String previousInfo = previousSelection != null ?
-                "Previous selection ID: " + previousSelection.getId() + " (" + previousSelection.getName() + " - $" + previousSelection.getPrice() + ")" :
-                "No previous selection";
+    private String buildRefinementPrompt(String componentType, String context, String compatibilityRules, Map<String, PcComponent> alreadySelected) {
+        String selectedComponents = buildAlreadySelectedContext(alreadySelected);
 
         return """
             You are refining a PC build to reduce costs while maintaining compatibility and performance.
@@ -79,7 +80,38 @@ public class PromptBuilderService {
             Return ONLY the component ID from the list above, nothing else.
             
             **ANY OTHER TEXT IN YOUR RESPONSE WILL CAUSE THE BUILD TO FAIL.**
-            """.formatted(compatibilityRules, previousInfo, componentType, context);
+            """.formatted(compatibilityRules, selectedComponents, componentType, context);
+    }
+
+    private String buildAlreadySelectedContext(Map<String, PcComponent> alreadySelected) {
+        if (alreadySelected.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder message = new StringBuilder();
+        message.append("\nALREADY SELECTED COMPONENTS (ENSURE COMPATIBILITY WITH THESE SPECS):\n");
+        for (Map.Entry<String, PcComponent> entry : alreadySelected.entrySet()) {
+            if (entry.getValue() != null) {
+                PcComponent component = entry.getValue();
+                message.append("  - ").append(entry.getKey()).append(": [ID: ").append(component.getId())
+                        .append("] ").append(component.getName())
+                        .append(" ($").append(component.getPrice()).append(")\n");
+
+                Map<String, Object> specs = component.getSpecifications();
+                if (specs != null && !specs.isEmpty()) {
+                    message.append("Specifications:\n");
+
+                    for (Map.Entry<String, Object> spec : specs.entrySet()) {
+                        if (spec.getValue() != null) {
+                            message.append("      * ").append(spec.getKey()).append(": ").append(spec.getValue()).append("\n");
+                        }
+                    }
+                }
+                message.append("\n");
+            }
+        }
+
+        return message.toString();
     }
 
     private String buildCompatibilityRules(String componentType) {
@@ -99,10 +131,10 @@ public class PromptBuilderService {
                     """;
             case "RAM" -> """
                     RAM COMPATIBILITY RULES:
-                    - CPU Socket Compatibility:
-                          * LGA1851 and AM5: DDR5 only
-                          * LGA1700: DDR4 or DDR5
-                          * AM4: DDR4 only
+                          Input: CPU Socket = AM5 → Output: RAM DDR5
+                          Input: CPU Socket = AM4 → Output: RAM DDR4
+                          Input: CPU Socket = LGA1851 → Output: RAM DDR5
+                          Input: CPU Socket = LGA1700 → Output: RAM DDR4 | RAM DDR5
                     """;
             case "GPU" -> """
                     GPU COMPATIBILITY RULES:
@@ -137,7 +169,6 @@ public class PromptBuilderService {
 
     public String buildComponentSelectionMessage(String componentType,
                                                  Map<String, Map<String, Object>> requirements,
-                                                 Map<String, PcComponent> alreadySelected,
                                                  double remainingBudget,
                                                  int iteration,
                                                  List<String> remainingComponents) {
@@ -179,38 +210,13 @@ public class PromptBuilderService {
             }
         }
 
-        // Add compatibility constraints
-        if (!alreadySelected.isEmpty()) {
-            message.append("\nALREADY SELECTED COMPONENTS (ENSURE COMPATIBILITY WITH THESE SPECS):\n");
-            for (Map.Entry<String, PcComponent> entry : alreadySelected.entrySet()) {
-                if (entry.getValue() != null) {
-                    PcComponent component = entry.getValue();
-                    message.append("  - ").append(entry.getKey()).append(": [ID: ").append(component.getId())
-                            .append("] ").append(component.getName())
-                            .append(" ($").append(component.getPrice()).append(")\n");
-
-                    Map<String, Object> specs = component.getSpecifications();
-                    if (specs != null && !specs.isEmpty()) {
-                        message.append("Specifications:\n");
-
-                        for (Map.Entry<String, Object> spec : specs.entrySet()) {
-                            if (spec.getValue() != null) {
-                                message.append("      * ").append(spec.getKey()).append(": ").append(spec.getValue()).append("\n");
-                            }
-                        }
-                    }
-                    message.append("\n");
-                }
-            }
-        }
-
         message.append("\nRemaining budget: $").append(remainingBudget);
         message.append("\n\nReturn only the component ID from the available options.");
 
         return message.toString();
     }
 
-    public String buildRefinementInstruction(double overspentAmount, Map<String, PcComponent> currentBuild) {
+    public String buildRefinementInstruction(double overspentAmount) {
         StringBuilder instruction = new StringBuilder();
 
         instruction.append("The current build exceeds the budget by $").append(String.format("%.2f", overspentAmount))
@@ -237,16 +243,6 @@ public class PromptBuilderService {
 
         instruction.append("\nTarget Reduction: Aim to reduce total cost by approximately $").append(String.format("%.2f", overspentAmount))
                 .append(" (the exact overspent amount)\n\n");
-
-        instruction.append("\nCurrent Component Costs:\n");
-        for (String priority : COMPONENT_PRIORITY) {
-            String key = priority.toLowerCase();
-            PcComponent component = currentBuild.get(key);
-            if (component != null && component.getPrice() != null) {
-                instruction.append("- ").append(priority).append(": [ID: ").append(component.getId()).append("] $").append(component.getPrice())
-                        .append(" (").append(component.getName()).append(")\n");
-            }
-        }
 
         instruction.append("\nRemember: Compatibility is the highest priority. Only suggest compatible alternatives.");
 

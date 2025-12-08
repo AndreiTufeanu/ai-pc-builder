@@ -28,7 +28,7 @@ export class AdminDashboardComponent {
   isChatLoading = false;
   private chatSubscription?: Subscription;
 
-  // Component form data (unchanged)
+  // Component form data
   showComponentForm = signal(false);
   editingComponent = signal<PcComponent | null>(null);
   componentForm = {
@@ -158,24 +158,21 @@ export class AdminDashboardComponent {
       specifications: {}
     };
     this.editingComponent.set(null);
-    this.onTypeChange(); // Initialize specs for default type
+    this.onTypeChange();
     this.showComponentForm.set(true);
   }
 
   openEditComponent(component: PcComponent): void {
-    // First, parse the specifications to extract numeric values from strings with units
+    // Parse the specifications to extract numeric values from strings with units
     const parsedSpecifications: { [key: string]: any } = {};
 
-    // Get the specs for this component type
     const specs = this.componentService.getSpecsForType(component.type);
 
-    // Parse each specification
     for (const spec of specs) {
       const storedValue = component.specifications[spec.name];
 
       if (storedValue !== undefined && storedValue !== null) {
         if (spec.type === 'number' && spec.unit) {
-          // Extract numeric value from string like "16 GB" or "2300 MHz"
           // Remove the unit and any whitespace, convert to number
           const match = String(storedValue).match(/^([\d.]+)/);
           if (match) {
@@ -231,7 +228,6 @@ export class AdminDashboardComponent {
       return;
     }
 
-    // Create a copy of specifications with units applied
     const specificationsWithUnits: { [key: string]: any } = {};
 
     for (const spec of this.currentSpecs()) {
@@ -239,13 +235,13 @@ export class AdminDashboardComponent {
 
       if (value !== '' && value !== null && value !== undefined) {
         if (Array.isArray(value)) {
-          // For checkbox groups, store as array
+          // For checkbox groups
           specificationsWithUnits[spec.name] = value;
         } else if (spec.unit && spec.type === 'number') {
-          // For numbers with units, store as string with unit
+          // For numbers with units
           specificationsWithUnits[spec.name] = `${value} ${spec.unit}`;
         } else {
-          // For other types, store as is
+          // For other types
           specificationsWithUnits[spec.name] = value;
         }
       }
@@ -270,7 +266,7 @@ export class AdminDashboardComponent {
       price: this.componentForm.price ? parseFloat(this.componentForm.price) : undefined,
       manufacturer: this.componentForm.manufacturer || undefined,
       model: this.componentForm.model || undefined,
-      specifications: specificationsWithUnits  // Use the formatted specifications with units
+      specifications: specificationsWithUnits
     };
 
     if (this.editingComponent()) {
@@ -320,7 +316,7 @@ export class AdminDashboardComponent {
     this.editingComponent.set(null);
   }
 
-  // Chat methods (unchanged)
+  // Chat methods
   sendMessage(): void {
     const message = this.newMessage.trim();
     if (!message) return;

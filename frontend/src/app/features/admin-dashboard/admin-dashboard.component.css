@@ -173,7 +173,7 @@
   justify-content: flex-end;
 }
 
-/* Updated Components Grid for better text handling */
+/* Components Grid */
 .components-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
@@ -200,7 +200,7 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Updated Component Header for better text handling */
+/* Component Header */
 .component-header {
   display: flex;
   flex-direction: column;

@@ -40,7 +40,7 @@ export class UserDashboardComponent implements AfterViewChecked {
   buildName = signal('My PC Build');
   buildDescription = signal('');
 
-  // Guided build functionality (unchanged)
+  // Guided build functionality
   currentStep = signal<ComponentType | 'summary'>(ComponentType.CPU);
   buildRequirements = signal<{ [key in ComponentType]?: BuildRequirement }>({});
   totalBudget = signal<number | null>(null);
@@ -278,13 +278,13 @@ export class UserDashboardComponent implements AfterViewChecked {
 
           if (value !== '' && value !== null && value !== undefined) {
             if (Array.isArray(value)) {
-              // For checkbox groups, store as array
+              // For checkbox groups
               formattedSpecs[spec.name] = value;
             } else if (spec.unit && spec.type === 'number') {
-              // For numbers with units, store as string with unit
+              // For numbers with units
               formattedSpecs[spec.name] = `${value} ${spec.unit}`;
             } else {
-              // For other types, store as is
+              // For other types
               formattedSpecs[spec.name] = value;
             }
           }
@@ -309,7 +309,7 @@ export class UserDashboardComponent implements AfterViewChecked {
       name: this.buildName(),
       description: this.buildDescription(),
       budget: budget,
-      requirements: requirementsWithUnits  // Send requirements with units
+      requirements: requirementsWithUnits
     };
 
     this.componentService.generateBuild(buildRequest).subscribe({
@@ -358,7 +358,7 @@ export class UserDashboardComponent implements AfterViewChecked {
     if (confirm(`Are you sure you want to delete "${build.name}"?`)) {
       this.componentService.deleteBuild(userId, build.id).subscribe({
         next: () => {
-          this.loadUserBuilds(); // Reload the list
+          this.loadUserBuilds();
         },
         error: (error) => {
           console.error('Error deleting build:', error);

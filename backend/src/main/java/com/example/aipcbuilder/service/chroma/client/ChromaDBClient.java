@@ -13,7 +13,7 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class ChromaDBClient {
 
-    @Value("${chromadb.server.url:http://localhost:8000}")
+    @Value("${CHROMA_URL}")
     private String baseUrl;
 
     private final RestTemplate restTemplate;

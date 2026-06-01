@@ -20,10 +20,18 @@ app.include_router(user_messages.router, prefix="/user_messages", tags=["user_me
 app.include_router(search.router, prefix="", tags=["search"])
 app.include_router(info.router, prefix="", tags=["info"])
 
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @app.get("/")
 async def root():
     return {"message": "PC Builder ChromaDB Server", "status": "running"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

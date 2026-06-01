@@ -1,0 +1,39 @@
+services:
+  chroma:
+    build:
+      context: ./chroma
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - WATCHFILES_FORCE_POLLING=true
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 1m
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 5s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://host.docker.internal:5432/pcbuilder
+      DB_USERNAME: postgres
+      DB_PASSWORD: 1q2w3e
+      CHROMA_URL: http://chroma:8000
+    networks:
+      - app-network
+    depends_on:
+      chroma:
+        condition: service_healthy
+
+networks:
+  app-network:
+    driver: bridge

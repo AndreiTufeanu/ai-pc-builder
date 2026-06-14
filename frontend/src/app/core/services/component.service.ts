@@ -3,13 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { PcComponent, BuildResponse, BuildRequest, BuildWithComponents, ComponentType, ComponentSpec, ComponentSpecs } from '../models/component.model';
 import { COMPONENT_SPECIFICATIONS } from '../constants/component-specifications.const';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ComponentService {
-  private baseUrl = 'http://localhost:8080/api/admin/components';
-  private buildBaseUrl = 'http://localhost:8080/api/build';
+  private baseUrl = `${environment.apiUrl}/api/admin/components`;
+  private buildBaseUrl = `${environment.apiUrl}/api/build`;
 
   constructor(private http: HttpClient) { }
 

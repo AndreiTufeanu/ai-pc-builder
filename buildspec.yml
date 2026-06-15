@@ -9,13 +9,16 @@ phases:
   build:
     commands:
       - docker build -t $ECR_REGISTRY/pc-builder/backend:$IMAGE_TAG -t $ECR_REGISTRY/pc-builder/backend:latest ./backend
+      - docker build -t $ECR_REGISTRY/pc-builder/chroma:$IMAGE_TAG -t $ECR_REGISTRY/pc-builder/chroma:latest ./chroma
 
   post_build:
     commands:
       - docker push $ECR_REGISTRY/pc-builder/backend:$IMAGE_TAG
       - docker push $ECR_REGISTRY/pc-builder/backend:latest
-      - printf '[{"name":"backend","imageUri":"%s"}]' $ECR_REGISTRY/pc-builder/backend:$IMAGE_TAG > imagedefinitions-backend.json
+      - docker push $ECR_REGISTRY/pc-builder/chroma:$IMAGE_TAG
+      - docker push $ECR_REGISTRY/pc-builder/chroma:latest
+      - printf '[{"name":"backend","imageUri":"%s"},{"name":"chroma","imageUri":"%s"}]' $ECR_REGISTRY/pc-builder/backend:$IMAGE_TAG $ECR_REGISTRY/pc-builder/chroma:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
   files:
-    - imagedefinitions-backend.json
+    - imagedefinitions.json

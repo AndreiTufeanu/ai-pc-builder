@@ -15,7 +15,8 @@ A web application for building PC configurations with AI assistance. Users can e
 **LLM:** Amazon Bedrock (replaced local Ollama for deployment)
 
 ![AWS deployment architecture](aws_architecture.png)
-*Request flow and service relationships for the production deployment.*
+<br>
+<em>Request flow and service relationships for the production deployment.</em>
 
 ## How it works
 

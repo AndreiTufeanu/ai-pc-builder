@@ -14,6 +14,9 @@ A web application for building PC configurations with AI assistance. Users can e
 
 **LLM:** Amazon Bedrock (replaced local Ollama for deployment)
 
+![AWS deployment architecture](aws_architecture.png)
+*Request flow and service relationships for the production deployment.*
+
 ## How it works
 
 There are two roles: admin and user. Admins can only be added directly through the database.
